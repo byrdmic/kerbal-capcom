@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using KSPCapcom.Responders;
 
 namespace KSPCapcom
 {
@@ -21,6 +22,8 @@ namespace KSPCapcom
         private string _inputText = "";
         private Vector2 _scrollPosition;
         private readonly List<ChatMessage> _messages;
+        private readonly IResponder _responder;
+        private bool _waitingForResponse;
         private GUIStyle _windowStyle;
         private GUIStyle _messageStyle;
         private GUIStyle _userMessageStyle;
@@ -34,11 +37,17 @@ namespace KSPCapcom
         /// </summary>
         public bool IsVisible => _isVisible;
 
-        public ChatPanel()
+        public ChatPanel() : this(new EchoResponder())
         {
+        }
+
+        public ChatPanel(IResponder responder)
+        {
+            _responder = responder ?? throw new ArgumentNullException(nameof(responder));
             _messages = new List<ChatMessage>();
             _isVisible = false;
             _stylesInitialized = false;
+            _waitingForResponse = false;
 
             // Position window in the right side of the screen
             float x = Screen.width - DEFAULT_WIDTH - 50;
@@ -47,6 +56,8 @@ namespace KSPCapcom
 
             // Add welcome message
             AddSystemMessage("CAPCOM online. How can I assist you, Flight?");
+
+            CapcomCore.Log($"ChatPanel initialized with responder: {_responder.Name}");
         }
 
         /// <summary>
@@ -182,13 +193,39 @@ namespace KSPCapcom
 
         private void DrawMessage(ChatMessage message)
         {
-            GUIStyle style = message.IsFromUser ? _userMessageStyle : _systemMessageStyle;
-            string prefix = message.IsFromUser ? "<b>You:</b> " : "<b>CAPCOM:</b> ";
+            GUIStyle style;
+            string prefix;
+            bool alignRight;
+
+            switch (message.Role)
+            {
+                case MessageRole.User:
+                    style = _userMessageStyle;
+                    prefix = "<b>You:</b> ";
+                    alignRight = true;
+                    break;
+                case MessageRole.Assistant:
+                    style = _systemMessageStyle;
+                    prefix = "<b>CAPCOM:</b> ";
+                    alignRight = false;
+                    break;
+                case MessageRole.System:
+                    style = _systemMessageStyle;
+                    prefix = "";
+                    alignRight = false;
+                    break;
+                default:
+                    style = _messageStyle;
+                    prefix = "";
+                    alignRight = false;
+                    break;
+            }
+
             string timestamp = message.Timestamp.ToString("HH:mm");
 
             GUILayout.BeginHorizontal();
 
-            if (message.IsFromUser)
+            if (alignRight)
             {
                 GUILayout.FlexibleSpace();
             }
@@ -199,7 +236,7 @@ namespace KSPCapcom
             GUILayout.Label($"{prefix}{message.Text}", style);
             GUILayout.EndVertical();
 
-            if (!message.IsFromUser)
+            if (!alignRight)
             {
                 GUILayout.FlexibleSpace();
             }
@@ -210,6 +247,9 @@ namespace KSPCapcom
         private void DrawInputArea()
         {
             GUILayout.BeginHorizontal();
+
+            // Disable input while waiting for response
+            GUI.enabled = !_waitingForResponse;
 
             // Set focus to input field if needed
             if (_focusInput)
@@ -232,8 +272,9 @@ namespace KSPCapcom
                 }
             }
 
-            // Send button
-            if (GUILayout.Button("Send", GUILayout.Width(50)))
+            // Send button with waiting indicator
+            string buttonText = _waitingForResponse ? "..." : "Send";
+            if (GUILayout.Button(buttonText, GUILayout.Width(50)))
             {
                 if (!string.IsNullOrWhiteSpace(_inputText))
                 {
@@ -241,11 +282,18 @@ namespace KSPCapcom
                 }
             }
 
+            GUI.enabled = true;
             GUILayout.EndHorizontal();
         }
 
         private void SendMessage()
         {
+            // Prevent sending while waiting for response
+            if (_waitingForResponse)
+            {
+                return;
+            }
+
             string text = _inputText.Trim();
             if (string.IsNullOrEmpty(text))
             {
@@ -258,7 +306,7 @@ namespace KSPCapcom
             // Clear input
             _inputText = "";
 
-            // Echo response (placeholder for future LLM integration)
+            // Request response from responder
             ProcessUserMessage(text);
 
             // Scroll to bottom
@@ -266,31 +314,63 @@ namespace KSPCapcom
         }
 
         /// <summary>
-        /// Process user message and generate response.
-        /// Currently just echoes; will be replaced with LLM integration.
+        /// Process user message and generate response via the responder.
         /// </summary>
         private void ProcessUserMessage(string userText)
         {
-            // Simple echo response for MVP
-            string response = $"Roger, I heard: \"{userText}\"";
+            if (_waitingForResponse)
+            {
+                CapcomCore.LogWarning("Already waiting for response, ignoring");
+                return;
+            }
 
-            // Add some contextual awareness
-            string scene = HighLogic.LoadedScene.ToString();
-            response += $"\n<size=10><i>(Current scene: {scene})</i></size>";
+            _waitingForResponse = true;
 
-            AddSystemMessage(response);
+            // Pass conversation history (responder can ignore if not needed)
+            _responder.Respond(
+                userText,
+                _messages.AsReadOnly(),
+                OnResponderComplete
+            );
+        }
+
+        /// <summary>
+        /// Callback when responder finishes generating a response.
+        /// </summary>
+        private void OnResponderComplete(ResponderResult result)
+        {
+            _waitingForResponse = false;
+
+            if (result.Success)
+            {
+                AddAssistantMessage(result.Text);
+            }
+            else
+            {
+                // Show error as system message
+                AddSystemMessage($"<color=#ff6666>Error: {result.ErrorMessage}</color>");
+                CapcomCore.LogError($"Responder error: {result.ErrorMessage}");
+            }
+
+            ScrollToBottom();
         }
 
         private void AddUserMessage(string text)
         {
-            _messages.Add(new ChatMessage(text, isFromUser: true));
-            CapcomCore.Log($"User message: {text}");
+            _messages.Add(ChatMessage.FromUser(text));
+            CapcomCore.Log($"[User] {text}");
+        }
+
+        private void AddAssistantMessage(string text)
+        {
+            _messages.Add(ChatMessage.FromAssistant(text));
+            CapcomCore.Log($"[Assistant] {text}");
         }
 
         private void AddSystemMessage(string text)
         {
-            _messages.Add(new ChatMessage(text, isFromUser: false));
-            CapcomCore.Log($"CAPCOM message: {text}");
+            _messages.Add(ChatMessage.FromSystem(text));
+            CapcomCore.Log($"[System] {text}");
         }
 
         private void ScrollToBottom()
@@ -311,14 +391,28 @@ namespace KSPCapcom
     public class ChatMessage
     {
         public string Text { get; }
-        public bool IsFromUser { get; }
+        public MessageRole Role { get; }
         public DateTime Timestamp { get; }
 
-        public ChatMessage(string text, bool isFromUser)
+        /// <summary>
+        /// Convenience property for backward compatibility.
+        /// </summary>
+        public bool IsFromUser => Role == MessageRole.User;
+
+        public ChatMessage(string text, MessageRole role)
         {
             Text = text;
-            IsFromUser = isFromUser;
+            Role = role;
             Timestamp = DateTime.Now;
         }
+
+        public static ChatMessage FromUser(string text) =>
+            new ChatMessage(text, MessageRole.User);
+
+        public static ChatMessage FromAssistant(string text) =>
+            new ChatMessage(text, MessageRole.Assistant);
+
+        public static ChatMessage FromSystem(string text) =>
+            new ChatMessage(text, MessageRole.System);
     }
 }
