@@ -315,8 +315,8 @@ namespace KSPCapcom
                         if (!string.IsNullOrWhiteSpace(_inputText))
                         {
                             shouldSend = true;
-                            e.Use(); // Consume the event to prevent newline insertion
                         }
+                        e.Use(); // Consume the event to prevent newline insertion
                     }
                 }
             }
