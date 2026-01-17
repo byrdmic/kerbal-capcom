@@ -7,32 +7,69 @@ namespace KSPCapcom
     /// <summary>
     /// Chat panel window for CAPCOM communication.
     /// Uses Unity IMGUI for rendering.
+    ///
+    /// Features:
+    /// - Scrollable message history with bounded size
+    /// - Smart auto-scroll (only scrolls to bottom if user hasn't scrolled up)
+    /// - Enter to send, Shift+Enter for newline
+    /// - Lightweight rendering to avoid frame hitches
     /// </summary>
     public class ChatPanel
     {
-        private const int WINDOW_ID = 84729; // Unique ID for the window
+        private const int WINDOW_ID = 84729;
         private const float DEFAULT_WIDTH = 350f;
         private const float DEFAULT_HEIGHT = 400f;
         private const float MIN_WIDTH = 280f;
         private const float MIN_HEIGHT = 200f;
+
+        /// <summary>
+        /// Maximum number of messages to retain in history.
+        /// Oldest messages are removed when limit is exceeded.
+        /// </summary>
+        private const int MAX_MESSAGES = 100;
+
+        /// <summary>
+        /// Threshold in pixels from bottom to consider "at bottom" for auto-scroll.
+        /// </summary>
+        private const float SCROLL_BOTTOM_THRESHOLD = 30f;
+
+        /// <summary>
+        /// Maximum height of the input text area in pixels.
+        /// </summary>
+        private const float MAX_INPUT_HEIGHT = 80f;
 
         private Rect _windowRect;
         private bool _isVisible;
         private string _inputText = "";
         private Vector2 _scrollPosition;
         private readonly List<ChatMessage> _messages;
+
+        // Styles
         private GUIStyle _windowStyle;
         private GUIStyle _messageStyle;
         private GUIStyle _userMessageStyle;
         private GUIStyle _systemMessageStyle;
         private GUIStyle _inputStyle;
         private bool _stylesInitialized;
+
+        // Input focus management
         private bool _focusInput;
+
+        // Auto-scroll management
+        private bool _shouldAutoScroll = true;
+        private float _lastScrollViewHeight;
+        private float _lastContentHeight;
+        private bool _pendingScrollToBottom;
 
         /// <summary>
         /// Whether the chat panel is currently visible.
         /// </summary>
         public bool IsVisible => _isVisible;
+
+        /// <summary>
+        /// Current number of messages in history.
+        /// </summary>
+        public int MessageCount => _messages.Count;
 
         public ChatPanel()
         {
@@ -40,7 +77,7 @@ namespace KSPCapcom
             _isVisible = false;
             _stylesInitialized = false;
 
-            // Position window in the right side of the screen
+            // Position window on the right side of the screen
             float x = Screen.width - DEFAULT_WIDTH - 50;
             float y = 100;
             _windowRect = new Rect(x, y, DEFAULT_WIDTH, DEFAULT_HEIGHT);
@@ -58,6 +95,9 @@ namespace KSPCapcom
             if (_isVisible)
             {
                 _focusInput = true;
+                // When showing panel, scroll to bottom to show latest
+                _pendingScrollToBottom = true;
+                _shouldAutoScroll = true;
             }
         }
 
@@ -66,8 +106,13 @@ namespace KSPCapcom
         /// </summary>
         public void Show()
         {
-            _isVisible = true;
-            _focusInput = true;
+            if (!_isVisible)
+            {
+                _isVisible = true;
+                _focusInput = true;
+                _pendingScrollToBottom = true;
+                _shouldAutoScroll = true;
+            }
         }
 
         /// <summary>
@@ -135,11 +180,11 @@ namespace KSPCapcom
             _systemMessageStyle = new GUIStyle(_messageStyle);
             _systemMessageStyle.normal.textColor = new Color(0.6f, 0.9f, 0.6f);
 
-            // Input field style
-            _inputStyle = new GUIStyle(HighLogic.Skin.textField)
+            // Input field style - use TextArea style for multiline support
+            _inputStyle = new GUIStyle(HighLogic.Skin.textArea)
             {
                 padding = new RectOffset(6, 6, 4, 4),
-                wordWrap = false
+                wordWrap = true
             };
 
             _stylesInitialized = true;
@@ -165,6 +210,16 @@ namespace KSPCapcom
 
         private void DrawMessagesArea()
         {
+            // Begin scroll view and track positions for auto-scroll detection
+            Rect scrollViewRect = GUILayoutUtility.GetRect(0, 0, GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true));
+
+            // We need to use a slightly different approach to track scroll
+            // Get scroll view height from the last layout pass
+            if (Event.current.type == EventType.Repaint)
+            {
+                _lastScrollViewHeight = scrollViewRect.height;
+            }
+
             _scrollPosition = GUILayout.BeginScrollView(
                 _scrollPosition,
                 false,
@@ -172,12 +227,45 @@ namespace KSPCapcom
                 GUILayout.ExpandHeight(true)
             );
 
+            // Track content start
+            float contentStart = 0;
+            if (Event.current.type == EventType.Repaint)
+            {
+                contentStart = GUILayoutUtility.GetLastRect().y;
+            }
+
             foreach (var message in _messages)
             {
                 DrawMessage(message);
             }
 
+            // Add a small spacer at the end for visual padding
+            GUILayout.Space(4);
+
+            // Track content height for auto-scroll calculation
+            if (Event.current.type == EventType.Repaint)
+            {
+                Rect lastRect = GUILayoutUtility.GetLastRect();
+                _lastContentHeight = lastRect.y + lastRect.height - contentStart;
+            }
+
             GUILayout.EndScrollView();
+
+            // Handle pending scroll to bottom
+            if (_pendingScrollToBottom && Event.current.type == EventType.Repaint)
+            {
+                _scrollPosition = new Vector2(0, _lastContentHeight);
+                _pendingScrollToBottom = false;
+            }
+
+            // Detect if user has scrolled up (disable auto-scroll)
+            // If scroll position is near the bottom, keep auto-scroll enabled
+            if (Event.current.type == EventType.Repaint && _lastContentHeight > _lastScrollViewHeight)
+            {
+                float maxScroll = _lastContentHeight - _lastScrollViewHeight;
+                float distanceFromBottom = maxScroll - _scrollPosition.y;
+                _shouldAutoScroll = distanceFromBottom <= SCROLL_BOTTOM_THRESHOLD;
+            }
         }
 
         private void DrawMessage(ChatMessage message)
@@ -209,6 +297,32 @@ namespace KSPCapcom
 
         private void DrawInputArea()
         {
+            // Handle keyboard input before drawing
+            // Check for Enter key to send (without Shift) or Shift+Enter for newline
+            bool shouldSend = false;
+            Event e = Event.current;
+
+            if (e.type == EventType.KeyDown && e.keyCode == KeyCode.Return)
+            {
+                if (GUI.GetNameOfFocusedControl() == "ChatInput")
+                {
+                    if (e.shift)
+                    {
+                        // Shift+Enter: Insert newline (handled naturally by TextArea)
+                        // Don't consume the event, let TextArea handle it
+                    }
+                    else
+                    {
+                        // Enter without Shift: Send message
+                        if (!string.IsNullOrWhiteSpace(_inputText))
+                        {
+                            shouldSend = true;
+                            e.Use(); // Consume the event to prevent newline insertion
+                        }
+                    }
+                }
+            }
+
             GUILayout.BeginHorizontal();
 
             // Set focus to input field if needed
@@ -218,30 +332,38 @@ namespace KSPCapcom
                 _focusInput = false;
             }
 
-            // Text input
+            // Calculate dynamic height for input area based on content
+            // Use TextArea for multiline input with Shift+Enter support
             GUI.SetNextControlName("ChatInput");
-            _inputText = GUILayout.TextField(_inputText, _inputStyle, GUILayout.ExpandWidth(true));
 
-            // Check for Enter key to send
-            if (Event.current.type == EventType.KeyDown && Event.current.keyCode == KeyCode.Return)
+            // Calculate appropriate height based on line count (capped)
+            int lineCount = 1;
+            if (!string.IsNullOrEmpty(_inputText))
             {
-                if (GUI.GetNameOfFocusedControl() == "ChatInput" && !string.IsNullOrWhiteSpace(_inputText))
-                {
-                    SendMessage();
-                    Event.current.Use();
-                }
+                lineCount = _inputText.Split('\n').Length;
             }
+            float inputHeight = Mathf.Min(20f + (lineCount - 1) * 16f, MAX_INPUT_HEIGHT);
+
+            _inputText = GUILayout.TextArea(_inputText, _inputStyle,
+                GUILayout.ExpandWidth(true),
+                GUILayout.Height(inputHeight));
 
             // Send button
-            if (GUILayout.Button("Send", GUILayout.Width(50)))
+            if (GUILayout.Button("Send", GUILayout.Width(50), GUILayout.Height(inputHeight)))
             {
                 if (!string.IsNullOrWhiteSpace(_inputText))
                 {
-                    SendMessage();
+                    shouldSend = true;
                 }
             }
 
             GUILayout.EndHorizontal();
+
+            // Process send after UI is drawn
+            if (shouldSend)
+            {
+                SendMessage();
+            }
         }
 
         private void SendMessage()
@@ -258,11 +380,11 @@ namespace KSPCapcom
             // Clear input
             _inputText = "";
 
+            // Re-focus input after sending
+            _focusInput = true;
+
             // Echo response (placeholder for future LLM integration)
             ProcessUserMessage(text);
-
-            // Scroll to bottom
-            ScrollToBottom();
         }
 
         /// <summary>
@@ -281,21 +403,71 @@ namespace KSPCapcom
             AddSystemMessage(response);
         }
 
+        /// <summary>
+        /// Add a message from the user.
+        /// </summary>
         private void AddUserMessage(string text)
         {
-            _messages.Add(new ChatMessage(text, isFromUser: true));
+            AddMessageInternal(text, isFromUser: true);
             CapcomCore.Log($"User message: {text}");
         }
 
-        private void AddSystemMessage(string text)
+        /// <summary>
+        /// Add a message from CAPCOM/system.
+        /// Can be called externally for LLM responses.
+        /// </summary>
+        public void AddSystemMessage(string text)
         {
-            _messages.Add(new ChatMessage(text, isFromUser: false));
+            AddMessageInternal(text, isFromUser: false);
             CapcomCore.Log($"CAPCOM message: {text}");
         }
 
-        private void ScrollToBottom()
+        /// <summary>
+        /// Internal method to add a message with bounds checking.
+        /// </summary>
+        private void AddMessageInternal(string text, bool isFromUser)
         {
-            _scrollPosition = new Vector2(0, float.MaxValue);
+            _messages.Add(new ChatMessage(text, isFromUser));
+
+            // Enforce message history limit
+            TrimMessageHistory();
+
+            // Auto-scroll to bottom if user was at bottom
+            if (_shouldAutoScroll)
+            {
+                _pendingScrollToBottom = true;
+            }
+        }
+
+        /// <summary>
+        /// Remove oldest messages if history exceeds limit.
+        /// </summary>
+        private void TrimMessageHistory()
+        {
+            while (_messages.Count > MAX_MESSAGES)
+            {
+                _messages.RemoveAt(0);
+            }
+        }
+
+        /// <summary>
+        /// Clear all messages from history.
+        /// </summary>
+        public void ClearHistory()
+        {
+            _messages.Clear();
+            _scrollPosition = Vector2.zero;
+            _shouldAutoScroll = true;
+            CapcomCore.Log("Chat history cleared");
+        }
+
+        /// <summary>
+        /// Force scroll to the bottom of the message history.
+        /// </summary>
+        public void ScrollToBottom()
+        {
+            _pendingScrollToBottom = true;
+            _shouldAutoScroll = true;
         }
 
         private void ClampWindowToScreen()
