@@ -430,6 +430,14 @@ namespace KSPCapcom
             // Enforce message history limit
             TrimMessageHistory();
 
+            if (isFromUser)
+            {
+                // Always show user-initiated messages.
+                _pendingScrollToBottom = true;
+                _shouldAutoScroll = true;
+                return;
+            }
+
             // Auto-scroll to bottom if user was at bottom
             if (_shouldAutoScroll)
             {
