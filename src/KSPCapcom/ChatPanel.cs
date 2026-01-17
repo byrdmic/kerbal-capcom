@@ -211,21 +211,19 @@ namespace KSPCapcom
         private void DrawMessagesArea()
         {
             // Begin scroll view and track positions for auto-scroll detection
-            Rect scrollViewRect = GUILayoutUtility.GetRect(0, 0, GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true));
-
-            // We need to use a slightly different approach to track scroll
-            // Get scroll view height from the last layout pass
-            if (Event.current.type == EventType.Repaint)
-            {
-                _lastScrollViewHeight = scrollViewRect.height;
-            }
-
             _scrollPosition = GUILayout.BeginScrollView(
                 _scrollPosition,
                 false,
                 true,
                 GUILayout.ExpandHeight(true)
             );
+
+            // Use the actual scroll view rect from the last layout pass
+            if (Event.current.type == EventType.Repaint)
+            {
+                Rect scrollViewRect = GUILayoutUtility.GetLastRect();
+                _lastScrollViewHeight = scrollViewRect.height;
+            }
 
             // Track content start
             float contentStart = 0;
