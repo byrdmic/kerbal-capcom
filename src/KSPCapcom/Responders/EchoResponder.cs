@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading;
 
 namespace KSPCapcom.Responders
 {
@@ -19,9 +20,26 @@ namespace KSPCapcom.Responders
             IReadOnlyList<ChatMessage> conversationHistory,
             Action<ResponderResult> onComplete)
         {
+            // Delegate to cancellation-aware overload
+            Respond(userMessage, conversationHistory, CancellationToken.None, onComplete);
+        }
+
+        public void Respond(
+            string userMessage,
+            IReadOnlyList<ChatMessage> conversationHistory,
+            CancellationToken cancellationToken,
+            Action<ResponderResult> onComplete)
+        {
             if (onComplete == null)
             {
                 CapcomCore.LogWarning("EchoResponder.Respond called with null callback");
+                return;
+            }
+
+            // Check for cancellation (though sync responder is instant)
+            if (cancellationToken.IsCancellationRequested)
+            {
+                onComplete(ResponderResult.Fail("Request cancelled"));
                 return;
             }
 

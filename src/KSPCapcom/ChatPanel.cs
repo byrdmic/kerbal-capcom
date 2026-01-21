@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using UnityEngine;
 using KSPCapcom.Responders;
 
@@ -45,7 +46,11 @@ namespace KSPCapcom
         private Vector2 _scrollPosition;
         private readonly List<ChatMessage> _messages;
         private readonly IResponder _responder;
-        private bool _waitingForResponse;
+
+        // Pending message state (replaces _waitingForResponse)
+        private ChatMessage _pendingMessage;
+        private readonly MessageQueue _messageQueue;
+        private CancellationTokenSource _currentRequestCts;
 
         // Styles
         private GUIStyle _windowStyle;
@@ -82,9 +87,10 @@ namespace KSPCapcom
         {
             _responder = responder ?? throw new ArgumentNullException(nameof(responder));
             _messages = new List<ChatMessage>();
+            _messageQueue = new MessageQueue();
             _isVisible = false;
             _stylesInitialized = false;
-            _waitingForResponse = false;
+            _pendingMessage = null;
 
             // Position window on the right side of the screen
             float x = Screen.width - DEFAULT_WIDTH - 50;
@@ -96,6 +102,11 @@ namespace KSPCapcom
 
             CapcomCore.Log($"ChatPanel initialized with responder: {_responder.Name}");
         }
+
+        /// <summary>
+        /// Whether a response is currently being generated or pending messages are queued.
+        /// </summary>
+        private bool IsWaitingForResponse => _pendingMessage != null || _responder.IsBusy;
 
         /// <summary>
         /// Toggle the panel visibility.
@@ -308,6 +319,15 @@ namespace KSPCapcom
             }
 
             string timestamp = message.Timestamp.ToString("HH:mm");
+            string displayText = message.Text;
+
+            // Pending message indicator with animated ellipsis
+            if (message.IsPending)
+            {
+                int dots = ((int)(Time.time * 2)) % 4;
+                string ellipsis = new string('.', dots);
+                displayText = $"<i>{message.Text}{ellipsis}</i>";
+            }
 
             GUILayout.BeginHorizontal();
 
@@ -319,7 +339,7 @@ namespace KSPCapcom
             // Draw message box
             GUILayout.BeginVertical(HighLogic.Skin.box, GUILayout.MaxWidth(_windowRect.width * 0.85f));
             GUILayout.Label($"<size=10><color=#888888>{timestamp}</color></size>", style);
-            GUILayout.Label($"{prefix}{message.Text}", style);
+            GUILayout.Label($"{prefix}{displayText}", style);
             GUILayout.EndVertical();
 
             if (!alignRight)
@@ -360,8 +380,8 @@ namespace KSPCapcom
 
             GUILayout.BeginHorizontal();
 
-            // Disable input while waiting for response
-            GUI.enabled = !_waitingForResponse;
+            // Input remains enabled even while waiting (messages will queue)
+            // This keeps UI responsive
 
             // Set focus to input field if needed
             if (_focusInput)
@@ -386,8 +406,8 @@ namespace KSPCapcom
                 GUILayout.ExpandWidth(true),
                 GUILayout.Height(inputHeight));
 
-            // Send button with waiting indicator
-            string buttonText = _waitingForResponse ? "..." : "Send";
+            // Send button with status indicator
+            string buttonText = IsWaitingForResponse ? "..." : "Send";
             if (GUILayout.Button(buttonText, GUILayout.Width(50), GUILayout.Height(inputHeight)))
             {
                 if (!string.IsNullOrWhiteSpace(_inputText))
@@ -396,7 +416,6 @@ namespace KSPCapcom
                 }
             }
 
-            GUI.enabled = true;
             GUILayout.EndHorizontal();
 
             // Process send after UI is drawn
@@ -408,28 +427,34 @@ namespace KSPCapcom
 
         private void SendMessage()
         {
-            // Prevent sending while waiting for response
-            if (_waitingForResponse)
-            {
-                return;
-            }
-
             string text = _inputText.Trim();
             if (string.IsNullOrEmpty(text))
             {
                 return;
             }
 
-            // Add user message
+            // Add user message immediately for responsiveness
             AddUserMessage(text);
 
-            // Clear input
+            // Clear input immediately
             _inputText = "";
 
             // Re-focus input after sending
             _focusInput = true;
 
-            // Request response from responder
+            // If responder is busy, queue the request
+            if (_responder.IsBusy || _pendingMessage != null)
+            {
+                _messageQueue.Enqueue(new MessageRequest(
+                    text,
+                    new List<ChatMessage>(_messages).AsReadOnly(),
+                    OnResponderComplete
+                ));
+                CapcomCore.Log($"Message queued (queue size: {_messageQueue.Count})");
+                return;
+            }
+
+            // Process immediately
             ProcessUserMessage(text);
         }
 
@@ -438,18 +463,25 @@ namespace KSPCapcom
         /// </summary>
         private void ProcessUserMessage(string userText)
         {
-            if (_waitingForResponse)
+            if (_pendingMessage != null)
             {
                 CapcomCore.LogWarning("Already waiting for response, ignoring");
                 return;
             }
 
-            _waitingForResponse = true;
+            // Add pending message immediately for visual feedback
+            _pendingMessage = ChatMessage.FromAssistantPending();
+            _messages.Add(_pendingMessage);
+            ScrollToBottom();
 
-            // Pass conversation history (responder can ignore if not needed)
+            // Create cancellation token for this request (M2 ready)
+            _currentRequestCts = new CancellationTokenSource();
+
+            // Pass conversation history and cancellation token
             _responder.Respond(
                 userText,
                 _messages.AsReadOnly(),
+                _currentRequestCts.Token,
                 OnResponderComplete
             );
         }
@@ -459,20 +491,76 @@ namespace KSPCapcom
         /// </summary>
         private void OnResponderComplete(ResponderResult result)
         {
-            _waitingForResponse = false;
-
-            if (result.Success)
+            // Complete the pending message
+            if (_pendingMessage != null)
             {
+                if (result.Success)
+                {
+                    _pendingMessage.Complete(result.Text);
+                    CapcomCore.Log($"[Assistant] {result.Text}");
+                }
+                else
+                {
+                    // Replace pending with error message
+                    _messages.Remove(_pendingMessage);
+                    AddSystemMessage($"<color=#ff6666>Error: {result.ErrorMessage}</color>");
+                    CapcomCore.LogError($"Responder error: {result.ErrorMessage}");
+                }
+                _pendingMessage = null;
+            }
+            else if (result.Success)
+            {
+                // No pending message (shouldn't happen, but handle gracefully)
                 AddAssistantMessage(result.Text);
             }
             else
             {
-                // Show error as system message
                 AddSystemMessage($"<color=#ff6666>Error: {result.ErrorMessage}</color>");
                 CapcomCore.LogError($"Responder error: {result.ErrorMessage}");
             }
 
+            // Cleanup cancellation token
+            _currentRequestCts?.Dispose();
+            _currentRequestCts = null;
+
             ScrollToBottom();
+
+            // Process next queued message if any
+            ProcessNextQueuedMessage();
+        }
+
+        /// <summary>
+        /// Process the next message in the queue if responder is available.
+        /// </summary>
+        private void ProcessNextQueuedMessage()
+        {
+            if (_responder.IsBusy || _pendingMessage != null)
+            {
+                return;
+            }
+
+            var next = _messageQueue.Dequeue();
+            if (next != null)
+            {
+                CapcomCore.Log($"Processing queued message (remaining: {_messageQueue.Count})");
+                ProcessUserMessage(next.UserMessage);
+            }
+        }
+
+        /// <summary>
+        /// Cancel the current pending request.
+        /// </summary>
+        public void CancelCurrentRequest()
+        {
+            _currentRequestCts?.Cancel();
+            _responder.Cancel();
+
+            if (_pendingMessage != null)
+            {
+                _messages.Remove(_pendingMessage);
+                _pendingMessage = null;
+                AddSystemMessage("<color=#ffaa00>Request cancelled</color>");
+            }
         }
 
         /// <summary>
@@ -551,24 +639,129 @@ namespace KSPCapcom
     }
 
     /// <summary>
+    /// Request object for queued messages.
+    /// </summary>
+    public class MessageRequest
+    {
+        public string UserMessage { get; }
+        public IReadOnlyList<ChatMessage> History { get; }
+        public Action<ResponderResult> OnComplete { get; }
+        public DateTime QueuedAt { get; }
+
+        public MessageRequest(
+            string userMessage,
+            IReadOnlyList<ChatMessage> history,
+            Action<ResponderResult> onComplete)
+        {
+            UserMessage = userMessage;
+            History = history;
+            OnComplete = onComplete;
+            QueuedAt = DateTime.UtcNow;
+        }
+    }
+
+    /// <summary>
+    /// Queue for managing message requests with bounded size.
+    /// </summary>
+    public class MessageQueue
+    {
+        private readonly Queue<MessageRequest> _queue = new Queue<MessageRequest>();
+        private readonly int _maxQueueSize;
+
+        /// <summary>
+        /// Default maximum queue size.
+        /// </summary>
+        public const int DEFAULT_MAX_QUEUE_SIZE = 5;
+
+        public MessageQueue(int maxQueueSize = DEFAULT_MAX_QUEUE_SIZE)
+        {
+            _maxQueueSize = maxQueueSize;
+        }
+
+        public int Count => _queue.Count;
+        public bool HasPending => _queue.Count > 0;
+
+        public void Enqueue(MessageRequest request)
+        {
+            // Drop oldest if at capacity
+            while (_queue.Count >= _maxQueueSize)
+            {
+                var dropped = _queue.Dequeue();
+                CapcomCore.LogWarning("Message queue full, dropping oldest request");
+                // Notify dropped request
+                dropped.OnComplete?.Invoke(
+                    ResponderResult.Fail("Request dropped - queue overflow"));
+            }
+
+            _queue.Enqueue(request);
+        }
+
+        public MessageRequest Dequeue()
+        {
+            return _queue.Count > 0 ? _queue.Dequeue() : null;
+        }
+
+        public MessageRequest Peek()
+        {
+            return _queue.Count > 0 ? _queue.Peek() : null;
+        }
+
+        public void Clear()
+        {
+            while (_queue.Count > 0)
+            {
+                var request = _queue.Dequeue();
+                request.OnComplete?.Invoke(
+                    ResponderResult.Fail("Request cancelled - queue cleared"));
+            }
+        }
+    }
+
+    /// <summary>
     /// Represents a single chat message.
     /// </summary>
     public class ChatMessage
     {
-        public string Text { get; }
+        public string Text { get; private set; }
         public MessageRole Role { get; }
         public DateTime Timestamp { get; }
+
+        /// <summary>
+        /// Whether this message is still being generated (pending/streaming).
+        /// </summary>
+        public bool IsPending { get; private set; }
 
         /// <summary>
         /// Convenience property for backward compatibility.
         /// </summary>
         public bool IsFromUser => Role == MessageRole.User;
 
-        public ChatMessage(string text, MessageRole role)
+        public ChatMessage(string text, MessageRole role, bool isPending = false)
         {
             Text = text;
             Role = role;
             Timestamp = DateTime.Now;
+            IsPending = isPending;
+        }
+
+        /// <summary>
+        /// Update the message text (for streaming or completing pending messages).
+        /// </summary>
+        public void UpdateText(string newText)
+        {
+            Text = newText;
+        }
+
+        /// <summary>
+        /// Mark the message as complete (no longer pending).
+        /// </summary>
+        public void Complete(string finalText = null)
+        {
+            if (finalText != null)
+            {
+                Text = finalText;
+            }
+            IsPending = false;
         }
 
         public static ChatMessage FromUser(string text) =>
@@ -576,6 +769,9 @@ namespace KSPCapcom
 
         public static ChatMessage FromAssistant(string text) =>
             new ChatMessage(text, MessageRole.Assistant);
+
+        public static ChatMessage FromAssistantPending(string placeholderText = "CAPCOM is thinking...") =>
+            new ChatMessage(placeholderText, MessageRole.Assistant, isPending: true);
 
         public static ChatMessage FromSystem(string text) =>
             new ChatMessage(text, MessageRole.System);

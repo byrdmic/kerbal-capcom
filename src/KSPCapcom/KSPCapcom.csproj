@@ -68,9 +68,12 @@
   <ItemGroup>
     <Compile Include="CapcomCore.cs" />
     <Compile Include="ChatPanel.cs" />
+    <Compile Include="MainThreadDispatcher.cs" />
     <Compile Include="MessageRole.cs" />
-    <Compile Include="Responders\IResponder.cs" />
+    <Compile Include="Responders\AsyncResponderBase.cs" />
+    <Compile Include="Responders\DelayedEchoResponder.cs" />
     <Compile Include="Responders\EchoResponder.cs" />
+    <Compile Include="Responders\IResponder.cs" />
     <Compile Include="ToolbarButton.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

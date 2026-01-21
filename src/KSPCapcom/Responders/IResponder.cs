@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading;
 
 namespace KSPCapcom.Responders
 {
@@ -47,6 +48,21 @@ namespace KSPCapcom.Responders
         void Respond(
             string userMessage,
             IReadOnlyList<ChatMessage> conversationHistory,
+            Action<ResponderResult> onComplete
+        );
+
+        /// <summary>
+        /// Generate a response to the user's message with cancellation support.
+        /// </summary>
+        /// <param name="userMessage">The user's input text.</param>
+        /// <param name="conversationHistory">Previous messages for context.</param>
+        /// <param name="cancellationToken">Token to observe for cancellation.</param>
+        /// <param name="onComplete">Callback invoked when response is ready.
+        /// MUST be invoked on the Unity main thread.</param>
+        void Respond(
+            string userMessage,
+            IReadOnlyList<ChatMessage> conversationHistory,
+            CancellationToken cancellationToken,
             Action<ResponderResult> onComplete
         );
 
