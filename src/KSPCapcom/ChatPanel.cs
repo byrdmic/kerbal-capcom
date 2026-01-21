@@ -75,6 +75,7 @@ namespace KSPCapcom
         private GUIStyle _settingsBoxStyle;
         private GUIStyle _validationErrorStyle;
         private GUIStyle _statusLabelStyle;
+        private GUIStyle _cancelButtonStyle;
 
         // Auto-scroll management
         private bool _shouldAutoScroll = true;
@@ -271,6 +272,11 @@ namespace KSPCapcom
             {
                 fontSize = 11
             };
+
+            // Cancel/Stop button style (orange-red to indicate stop action)
+            _cancelButtonStyle = new GUIStyle(HighLogic.Skin.button);
+            _cancelButtonStyle.normal.textColor = new Color(1f, 0.6f, 0.4f);
+            _cancelButtonStyle.hover.textColor = new Color(1f, 0.7f, 0.5f);
 
             _stylesInitialized = true;
         }
@@ -592,6 +598,14 @@ namespace KSPCapcom
                 }
             }
 
+            // Handle Escape key to cancel pending request
+            if (e.type == EventType.KeyDown && e.keyCode == KeyCode.Escape && IsWaitingForResponse)
+            {
+                CancelCurrentRequest();
+                CapcomCore.Log("User cancelled request via Escape key");
+                e.Use();
+            }
+
             GUILayout.BeginHorizontal();
 
             // Input remains enabled even while waiting (messages will queue)
@@ -620,13 +634,25 @@ namespace KSPCapcom
                 GUILayout.ExpandWidth(true),
                 GUILayout.Height(inputHeight));
 
-            // Send button with status indicator
-            string buttonText = IsWaitingForResponse ? "..." : "Send";
-            if (GUILayout.Button(buttonText, GUILayout.Width(50), GUILayout.Height(inputHeight)))
+            // Send/Stop button - contextual based on state
+            if (IsWaitingForResponse)
             {
-                if (!string.IsNullOrWhiteSpace(_inputText))
+                // Stop button when waiting for response
+                if (GUILayout.Button("Stop", _cancelButtonStyle, GUILayout.Width(50), GUILayout.Height(inputHeight)))
                 {
-                    shouldSend = true;
+                    CancelCurrentRequest();
+                    CapcomCore.Log("User cancelled request via Stop button");
+                }
+            }
+            else
+            {
+                // Normal Send button
+                if (GUILayout.Button("Send", GUILayout.Width(50), GUILayout.Height(inputHeight)))
+                {
+                    if (!string.IsNullOrWhiteSpace(_inputText))
+                    {
+                        shouldSend = true;
+                    }
                 }
             }
 
