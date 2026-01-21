@@ -1,6 +1,7 @@
 using System;
 using System.Reflection;
 using UnityEngine;
+using KSPCapcom.LLM;
 using KSPCapcom.LLM.OpenAI;
 using KSPCapcom.Responders;
 
@@ -72,9 +73,16 @@ namespace KSPCapcom
             _secrets.Load();
 
             // Create OpenAI connector with API key and model from settings
-            var connector = new OpenAIConnector(
+            var openAIConnector = new OpenAIConnector(
                 getApiKey: () => _secrets.ApiKey,
                 getModel: () => _settings.Model
+            );
+
+            // Wrap with retry logic (off by default)
+            var connector = new RetryingConnector(
+                openAIConnector,
+                () => _settings.RetryEnabled,
+                () => _settings.MaxRetries
             );
 
             // Create LLM responder wrapping the connector

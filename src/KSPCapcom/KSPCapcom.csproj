@@ -81,6 +81,7 @@
     <Compile Include="LLM\LLMUsage.cs" />
     <Compile Include="LLM\OpenAI\OpenAIModels.cs" />
     <Compile Include="LLM\OpenAI\OpenAIConnector.cs" />
+    <Compile Include="LLM\RetryingConnector.cs" />
     <Compile Include="MainThreadDispatcher.cs" />
     <Compile Include="MessageRole.cs" />
     <Compile Include="Responders\AsyncResponderBase.cs" />
