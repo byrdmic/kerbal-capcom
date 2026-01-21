@@ -717,7 +717,8 @@ namespace KSPCapcom
                 {
                     // Replace pending with error message
                     _messages.Remove(_pendingMessage);
-                    AddSystemMessage($"<color=#ff6666>Error: {result.ErrorMessage}</color>");
+                    var errorColor = GetErrorColor(result.ErrorMessage);
+                    AddSystemMessage($"<color={errorColor}>Error: {result.ErrorMessage}</color>");
                     CapcomCore.LogError($"Responder error: {result.ErrorMessage}");
                 }
                 _pendingMessage = null;
@@ -729,7 +730,8 @@ namespace KSPCapcom
             }
             else
             {
-                AddSystemMessage($"<color=#ff6666>Error: {result.ErrorMessage}</color>");
+                var errorColor = GetErrorColor(result.ErrorMessage);
+                AddSystemMessage($"<color={errorColor}>Error: {result.ErrorMessage}</color>");
                 CapcomCore.LogError($"Responder error: {result.ErrorMessage}");
             }
 
@@ -775,6 +777,21 @@ namespace KSPCapcom
                 _pendingMessage = null;
                 AddSystemMessage("<color=#ffaa00>Request cancelled</color>");
             }
+        }
+
+        /// <summary>
+        /// Get the appropriate color for an error message.
+        /// Timeout errors use orange (recoverable), other errors use red.
+        /// </summary>
+        private string GetErrorColor(string errorMessage)
+        {
+            // Timeout is recoverable/retryable, use orange like cancellation
+            if (errorMessage != null && errorMessage.Contains("timed out"))
+            {
+                return "#ffaa00";
+            }
+            // Other errors use red
+            return "#ff6666";
         }
 
         /// <summary>

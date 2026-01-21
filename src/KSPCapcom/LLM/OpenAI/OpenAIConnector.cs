@@ -95,6 +95,7 @@ namespace KSPCapcom.LLM.OpenAI
                         if (stopwatch.ElapsedMilliseconds > timeoutMs)
                         {
                             webRequest.Abort();
+                            LogRequest(stopwatch.ElapsedMilliseconds, "timeout");
                             return LLMResponse.Fail(LLMError.Timeout("Request timed out. Try again."));
                         }
 

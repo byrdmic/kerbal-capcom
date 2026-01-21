@@ -141,7 +141,7 @@ namespace KSPCapcom.Responders
                     return "Cannot reach OpenAI. Check internet connection.";
 
                 case LLMErrorType.Timeout:
-                    return "Request timed out. Try again.";
+                    return "Request timed out. Check your connection and endpoint, or try again.";
 
                 case LLMErrorType.Cancelled:
                     return "Request cancelled";
