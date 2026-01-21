@@ -114,6 +114,7 @@ namespace KSPCapcom
         public void Toggle()
         {
             _isVisible = !_isVisible;
+            CapcomCore.Log($"Chat panel {(_isVisible ? "opened" : "closed")}");
             if (_isVisible)
             {
                 _focusInput = true;
@@ -130,6 +131,7 @@ namespace KSPCapcom
         {
             if (!_isVisible)
             {
+                CapcomCore.Log("Chat panel opened");
                 _isVisible = true;
                 _focusInput = true;
                 _pendingScrollToBottom = true;
@@ -142,6 +144,10 @@ namespace KSPCapcom
         /// </summary>
         public void Hide()
         {
+            if (_isVisible)
+            {
+                CapcomCore.Log("Chat panel closed");
+            }
             _isVisible = false;
         }
 

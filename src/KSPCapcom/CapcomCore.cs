@@ -1,4 +1,5 @@
 using System;
+using System.Reflection;
 using UnityEngine;
 
 namespace KSPCapcom
@@ -14,6 +15,12 @@ namespace KSPCapcom
 
         private static CapcomCore _instance;
         public static CapcomCore Instance => _instance;
+
+        // Version logging state
+        private static bool _versionLogged = false;
+
+        // Scene tracking for logging transitions
+        private static GameScenes _lastLoggedScene = GameScenes.LOADING;
 
         private ToolbarButton _toolbarButton;
         private ChatPanel _chatPanel;
@@ -34,6 +41,15 @@ namespace KSPCapcom
             }
 
             _instance = this;
+
+            // Log version once on first load
+            if (!_versionLogged)
+            {
+                var version = Assembly.GetExecutingAssembly().GetName().Version;
+                Log($"KSP CAPCOM v{version} loaded");
+                _versionLogged = true;
+            }
+
             Log("Bootstrap Awake()");
         }
 
@@ -45,7 +61,17 @@ namespace KSPCapcom
             _chatPanel = new ChatPanel();
             _toolbarButton = new ToolbarButton(OnToolbarToggle);
 
-            Log($"Initialized in scene: {HighLogic.LoadedScene}");
+            // Log scene changes
+            GameScenes currentScene = HighLogic.LoadedScene;
+            if (_lastLoggedScene != GameScenes.LOADING && _lastLoggedScene != currentScene)
+            {
+                Log($"Scene changed: {_lastLoggedScene} -> {currentScene}");
+            }
+            else if (_lastLoggedScene == GameScenes.LOADING)
+            {
+                Log($"Loaded in scene: {currentScene}");
+            }
+            _lastLoggedScene = currentScene;
         }
 
         private void OnDestroy()
@@ -78,7 +104,7 @@ namespace KSPCapcom
             if (_chatPanel != null)
             {
                 _chatPanel.Toggle();
-                Log($"Chat panel toggled: {_chatPanel.IsVisible}");
+                // Log removed - ChatPanel.Toggle() now handles logging
             }
         }
 
