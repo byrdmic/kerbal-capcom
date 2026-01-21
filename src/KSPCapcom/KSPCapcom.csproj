@@ -69,6 +69,13 @@
     <Compile Include="CapcomCore.cs" />
     <Compile Include="CapcomSettings.cs" />
     <Compile Include="ChatPanel.cs" />
+    <Compile Include="LLM\ILLMConnector.cs" />
+    <Compile Include="LLM\LLMError.cs" />
+    <Compile Include="LLM\LLMErrorType.cs" />
+    <Compile Include="LLM\LLMMessage.cs" />
+    <Compile Include="LLM\LLMRequestOptions.cs" />
+    <Compile Include="LLM\LLMResponse.cs" />
+    <Compile Include="LLM\LLMUsage.cs" />
     <Compile Include="MainThreadDispatcher.cs" />
     <Compile Include="MessageRole.cs" />
     <Compile Include="Responders\AsyncResponderBase.cs" />
