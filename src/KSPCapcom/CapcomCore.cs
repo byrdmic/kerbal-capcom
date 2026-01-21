@@ -1,6 +1,8 @@
 using System;
 using System.Reflection;
 using UnityEngine;
+using KSPCapcom.LLM.OpenAI;
+using KSPCapcom.Responders;
 
 namespace KSPCapcom
 {
@@ -25,6 +27,7 @@ namespace KSPCapcom
         private ToolbarButton _toolbarButton;
         private ChatPanel _chatPanel;
         private CapcomSettings _settings;
+        private SecretStore _secrets;
 
         /// <summary>
         /// Current CAPCOM settings.
@@ -65,7 +68,20 @@ namespace KSPCapcom
 
             // Initialize components
             _settings = new CapcomSettings();
-            _chatPanel = new ChatPanel(new Responders.EchoResponder(), _settings);
+            _secrets = new SecretStore();
+            _secrets.Load();
+
+            // Create OpenAI connector with API key and model from settings
+            var connector = new OpenAIConnector(
+                getApiKey: () => _secrets.ApiKey,
+                getModel: () => _settings.Model
+            );
+
+            // Create LLM responder wrapping the connector
+            var responder = new LLMResponder(connector);
+
+            // Create chat panel with LLM responder and secrets
+            _chatPanel = new ChatPanel(responder, _settings, _secrets);
             _toolbarButton = new ToolbarButton(OnToolbarToggle);
 
             // Log scene changes

@@ -20,9 +20,28 @@ namespace KSPCapcom
     public class CapcomSettings
     {
         /// <summary>
+        /// Default model to use for OpenAI API requests.
+        /// </summary>
+        public const string DefaultModel = "gpt-5-mini-2025-08-07";
+
+        /// <summary>
         /// Current operation mode (placeholder - does not affect behavior in M1).
         /// </summary>
         public OperationMode Mode { get; set; } = OperationMode.Teach;
+
+        /// <summary>
+        /// Model identifier for LLM requests.
+        /// </summary>
+        public string Model { get; private set; } = DefaultModel;
+
+        /// <summary>
+        /// Set the model identifier.
+        /// </summary>
+        /// <param name="value">The model name. If null or empty, defaults to DefaultModel.</param>
+        public void SetModel(string value)
+        {
+            Model = string.IsNullOrWhiteSpace(value) ? DefaultModel : value;
+        }
 
         /// <summary>
         /// API endpoint URL (placeholder - stored but unused in M1).

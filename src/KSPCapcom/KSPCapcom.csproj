@@ -37,8 +37,11 @@
     <Reference Include="System.Data.DataSetExtensions"/>
     <Reference Include="Microsoft.CSharp"/>
     <Reference Include="System.Data"/>
-    <Reference Include="System.Net.Http"/>
     <Reference Include="System.Xml"/>
+    <Reference Include="UnityEngine.UnityWebRequestModule">
+      <HintPath>$(KSP_DIR)\KSP_x64_Data\Managed\UnityEngine.UnityWebRequestModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
     <!-- KSP Assembly References -->
     <Reference Include="Assembly-CSharp">
       <HintPath>$(KSP_DIR)\KSP_x64_Data\Managed\Assembly-CSharp.dll</HintPath>
@@ -76,12 +79,16 @@
     <Compile Include="LLM\LLMRequestOptions.cs" />
     <Compile Include="LLM\LLMResponse.cs" />
     <Compile Include="LLM\LLMUsage.cs" />
+    <Compile Include="LLM\OpenAI\OpenAIModels.cs" />
+    <Compile Include="LLM\OpenAI\OpenAIConnector.cs" />
     <Compile Include="MainThreadDispatcher.cs" />
     <Compile Include="MessageRole.cs" />
     <Compile Include="Responders\AsyncResponderBase.cs" />
     <Compile Include="Responders\DelayedEchoResponder.cs" />
     <Compile Include="Responders\EchoResponder.cs" />
     <Compile Include="Responders\IResponder.cs" />
+    <Compile Include="Responders\LLMResponder.cs" />
+    <Compile Include="SecretStore.cs" />
     <Compile Include="ToolbarButton.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

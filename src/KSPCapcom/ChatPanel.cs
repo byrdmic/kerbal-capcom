@@ -65,11 +65,16 @@ namespace KSPCapcom
 
         // Settings UI state
         private readonly CapcomSettings _settings;
+        private readonly SecretStore _secrets;
         private bool _settingsExpanded = false;
         private string _endpointInput = "";
+        private string _modelInput = "";
+        private string _apiKeyInput = "";
+        private bool _showApiKeyField = false;
         private GUIStyle _settingsHeaderStyle;
         private GUIStyle _settingsBoxStyle;
         private GUIStyle _validationErrorStyle;
+        private GUIStyle _statusLabelStyle;
 
         // Auto-scroll management
         private bool _shouldAutoScroll = true;
@@ -87,28 +92,34 @@ namespace KSPCapcom
         /// </summary>
         public int MessageCount => _messages.Count;
 
-        public ChatPanel() : this(new EchoResponder(), null)
+        public ChatPanel() : this(new EchoResponder(), null, null)
         {
         }
 
-        public ChatPanel(IResponder responder) : this(responder, null)
+        public ChatPanel(IResponder responder) : this(responder, null, null)
         {
         }
 
-        public ChatPanel(IResponder responder, CapcomSettings settings)
+        public ChatPanel(IResponder responder, CapcomSettings settings) : this(responder, settings, null)
+        {
+        }
+
+        public ChatPanel(IResponder responder, CapcomSettings settings, SecretStore secrets)
         {
             _responder = responder ?? throw new ArgumentNullException(nameof(responder));
             _settings = settings;
+            _secrets = secrets;
             _messages = new List<ChatMessage>();
             _messageQueue = new MessageQueue();
             _isVisible = false;
             _stylesInitialized = false;
             _pendingMessage = null;
 
-            // Initialize endpoint input from settings
+            // Initialize settings UI inputs from settings
             if (_settings != null)
             {
                 _endpointInput = _settings.Endpoint;
+                _modelInput = _settings.Model;
             }
 
             // Position window on the right side of the screen
@@ -255,6 +266,12 @@ namespace KSPCapcom
             };
             _validationErrorStyle.normal.textColor = new Color(1f, 0.4f, 0.4f);
 
+            // Status label style (for API key status)
+            _statusLabelStyle = new GUIStyle(HighLogic.Skin.label)
+            {
+                fontSize = 11
+            };
+
             _stylesInitialized = true;
         }
 
@@ -319,6 +336,82 @@ namespace KSPCapcom
 
                 GUILayout.Label("(placeholder)", GUILayout.ExpandWidth(true));
                 GUILayout.EndHorizontal();
+
+                GUILayout.Space(4);
+
+                // Model row: "Model:" label + text field
+                GUILayout.BeginHorizontal();
+                GUILayout.Label("Model:", GUILayout.Width(60));
+
+                string newModel = GUILayout.TextField(_modelInput, GUILayout.ExpandWidth(true));
+                if (newModel != _modelInput)
+                {
+                    _modelInput = newModel;
+                    _settings.SetModel(newModel);
+                }
+
+                GUILayout.EndHorizontal();
+
+                GUILayout.Space(4);
+
+                // API key status row
+                if (_secrets != null)
+                {
+                    GUILayout.BeginHorizontal();
+                    GUILayout.Label("API Key:", GUILayout.Width(60));
+
+                    if (_secrets.HasApiKey)
+                    {
+                        var configuredStyle = new GUIStyle(_statusLabelStyle);
+                        configuredStyle.normal.textColor = new Color(0.6f, 0.9f, 0.6f);
+                        GUILayout.Label("configured", configuredStyle);
+                    }
+                    else
+                    {
+                        var notConfiguredStyle = new GUIStyle(_statusLabelStyle);
+                        notConfiguredStyle.normal.textColor = new Color(1f, 0.6f, 0.4f);
+                        GUILayout.Label("not configured", notConfiguredStyle);
+                    }
+
+                    // Toggle button to show/hide API key input
+                    if (GUILayout.Button(_showApiKeyField ? "Hide" : "Edit", GUILayout.Width(40)))
+                    {
+                        _showApiKeyField = !_showApiKeyField;
+                        if (_showApiKeyField)
+                        {
+                            // Don't pre-fill with existing key for security
+                            _apiKeyInput = "";
+                        }
+                    }
+
+                    GUILayout.EndHorizontal();
+
+                    // API key input field (when editing)
+                    if (_showApiKeyField)
+                    {
+                        GUILayout.BeginHorizontal();
+                        GUILayout.Space(64); // Indent to align with other fields
+
+                        // Password field for API key
+                        _apiKeyInput = GUILayout.PasswordField(_apiKeyInput, '*', GUILayout.ExpandWidth(true));
+
+                        if (GUILayout.Button("Save", GUILayout.Width(40)))
+                        {
+                            if (!string.IsNullOrEmpty(_apiKeyInput))
+                            {
+                                _secrets.SetApiKey(_apiKeyInput);
+                                _apiKeyInput = "";
+                                _showApiKeyField = false;
+                                CapcomCore.Log("API key updated");
+                            }
+                        }
+
+                        GUILayout.EndHorizontal();
+
+                        // Hint text
+                        GUILayout.Label("Enter your OpenAI API key", _statusLabelStyle);
+                    }
+                }
 
                 GUILayout.Space(4);
 

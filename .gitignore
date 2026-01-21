@@ -2,6 +2,9 @@
 deploy/GameData/KSPCapcom/Plugins/*.dll
 deploy/GameData/KSPCapcom/Plugins/*.pdb
 
+# Secrets (API keys)
+deploy/GameData/KSPCapcom/Plugins/secrets.cfg
+
 # Visual Studio
 .vs/
 *.user
