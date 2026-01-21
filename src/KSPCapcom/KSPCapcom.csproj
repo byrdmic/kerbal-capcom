@@ -67,6 +67,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CapcomCore.cs" />
+    <Compile Include="CapcomSettings.cs" />
     <Compile Include="ChatPanel.cs" />
     <Compile Include="MainThreadDispatcher.cs" />
     <Compile Include="MessageRole.cs" />

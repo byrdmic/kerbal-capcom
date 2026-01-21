@@ -63,6 +63,14 @@ namespace KSPCapcom
         // Input focus management
         private bool _focusInput;
 
+        // Settings UI state
+        private readonly CapcomSettings _settings;
+        private bool _settingsExpanded = false;
+        private string _endpointInput = "";
+        private GUIStyle _settingsHeaderStyle;
+        private GUIStyle _settingsBoxStyle;
+        private GUIStyle _validationErrorStyle;
+
         // Auto-scroll management
         private bool _shouldAutoScroll = true;
         private float _lastScrollViewHeight;
@@ -79,18 +87,29 @@ namespace KSPCapcom
         /// </summary>
         public int MessageCount => _messages.Count;
 
-        public ChatPanel() : this(new EchoResponder())
+        public ChatPanel() : this(new EchoResponder(), null)
         {
         }
 
-        public ChatPanel(IResponder responder)
+        public ChatPanel(IResponder responder) : this(responder, null)
+        {
+        }
+
+        public ChatPanel(IResponder responder, CapcomSettings settings)
         {
             _responder = responder ?? throw new ArgumentNullException(nameof(responder));
+            _settings = settings;
             _messages = new List<ChatMessage>();
             _messageQueue = new MessageQueue();
             _isVisible = false;
             _stylesInitialized = false;
             _pendingMessage = null;
+
+            // Initialize endpoint input from settings
+            if (_settings != null)
+            {
+                _endpointInput = _settings.Endpoint;
+            }
 
             // Position window on the right side of the screen
             float x = Screen.width - DEFAULT_WIDTH - 50;
@@ -215,12 +234,36 @@ namespace KSPCapcom
                 wordWrap = true
             };
 
+            // Settings header style (collapsible button)
+            _settingsHeaderStyle = new GUIStyle(HighLogic.Skin.button)
+            {
+                alignment = TextAnchor.MiddleLeft,
+                padding = new RectOffset(8, 8, 4, 4)
+            };
+
+            // Settings box style
+            _settingsBoxStyle = new GUIStyle(HighLogic.Skin.box)
+            {
+                padding = new RectOffset(8, 8, 8, 8)
+            };
+
+            // Validation error style (red text)
+            _validationErrorStyle = new GUIStyle(HighLogic.Skin.label)
+            {
+                wordWrap = true,
+                fontSize = 11
+            };
+            _validationErrorStyle.normal.textColor = new Color(1f, 0.4f, 0.4f);
+
             _stylesInitialized = true;
         }
 
         private void DrawWindow(int windowId)
         {
             GUILayout.BeginVertical();
+
+            // Collapsible settings area
+            DrawSettingsArea();
 
             // Messages area with scroll
             DrawMessagesArea();
@@ -234,6 +277,78 @@ namespace KSPCapcom
 
             // Make window draggable by the title bar
             GUI.DragWindow(new Rect(0, 0, _windowRect.width, 20));
+        }
+
+        private void DrawSettingsArea()
+        {
+            // Only show settings if we have a settings object
+            if (_settings == null)
+            {
+                return;
+            }
+
+            // Collapsible header
+            string headerText = _settingsExpanded ? "▼ Settings" : "▶ Settings";
+            if (GUILayout.Button(headerText, _settingsHeaderStyle))
+            {
+                _settingsExpanded = !_settingsExpanded;
+            }
+
+            // Expanded settings content
+            if (_settingsExpanded)
+            {
+                GUILayout.BeginVertical(_settingsBoxStyle);
+
+                // Mode row: "Mode:" label + two toggles (Teach/Do) acting as radio buttons
+                GUILayout.BeginHorizontal();
+                GUILayout.Label("Mode:", GUILayout.Width(60));
+
+                bool isTeach = _settings.Mode == OperationMode.Teach;
+                bool newTeach = GUILayout.Toggle(isTeach, "Teach", HighLogic.Skin.button, GUILayout.Width(60));
+                bool newDo = GUILayout.Toggle(!isTeach, "Do", HighLogic.Skin.button, GUILayout.Width(40));
+
+                // Handle toggle changes (radio button behavior)
+                if (newTeach && !isTeach)
+                {
+                    _settings.Mode = OperationMode.Teach;
+                }
+                else if (newDo && isTeach)
+                {
+                    _settings.Mode = OperationMode.Do;
+                }
+
+                GUILayout.Label("(placeholder)", GUILayout.ExpandWidth(true));
+                GUILayout.EndHorizontal();
+
+                GUILayout.Space(4);
+
+                // Endpoint row: "Endpoint:" label + text field
+                GUILayout.BeginHorizontal();
+                GUILayout.Label("Endpoint:", GUILayout.Width(60));
+
+                string newEndpoint = GUILayout.TextField(_endpointInput, GUILayout.ExpandWidth(true));
+                if (newEndpoint != _endpointInput)
+                {
+                    _endpointInput = newEndpoint;
+                    _settings.SetEndpoint(newEndpoint);
+                }
+
+                GUILayout.EndHorizontal();
+
+                // Validation message or hint
+                if (!_settings.IsEndpointValid)
+                {
+                    GUILayout.Label(_settings.EndpointValidationError, _validationErrorStyle);
+                }
+                else if (!string.IsNullOrEmpty(_endpointInput))
+                {
+                    GUILayout.Label("(stored but unused in M1)", HighLogic.Skin.label);
+                }
+
+                GUILayout.EndVertical();
+            }
+
+            GUILayout.Space(4);
         }
 
         private void DrawMessagesArea()

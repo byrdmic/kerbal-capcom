@@ -24,6 +24,12 @@ namespace KSPCapcom
 
         private ToolbarButton _toolbarButton;
         private ChatPanel _chatPanel;
+        private CapcomSettings _settings;
+
+        /// <summary>
+        /// Current CAPCOM settings.
+        /// </summary>
+        public CapcomSettings Settings => _settings;
 
         /// <summary>
         /// Whether the chat panel is currently visible.
@@ -58,7 +64,8 @@ namespace KSPCapcom
             Log("Bootstrap Start()");
 
             // Initialize components
-            _chatPanel = new ChatPanel();
+            _settings = new CapcomSettings();
+            _chatPanel = new ChatPanel(new Responders.EchoResponder(), _settings);
             _toolbarButton = new ToolbarButton(OnToolbarToggle);
 
             // Log scene changes
