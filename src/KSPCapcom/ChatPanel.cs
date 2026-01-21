@@ -76,6 +76,8 @@ namespace KSPCapcom
         private GUIStyle _validationErrorStyle;
         private GUIStyle _statusLabelStyle;
         private GUIStyle _cancelButtonStyle;
+        private GUIStyle _queueCountStyle;
+        private GUIStyle _queuedMessageStyle;
 
         // Auto-scroll management
         private bool _shouldAutoScroll = true;
@@ -277,6 +279,18 @@ namespace KSPCapcom
             _cancelButtonStyle = new GUIStyle(HighLogic.Skin.button);
             _cancelButtonStyle.normal.textColor = new Color(1f, 0.6f, 0.4f);
             _cancelButtonStyle.hover.textColor = new Color(1f, 0.7f, 0.5f);
+
+            // Queue count indicator style (small, muted)
+            _queueCountStyle = new GUIStyle(HighLogic.Skin.label)
+            {
+                fontSize = 10,
+                alignment = TextAnchor.MiddleCenter
+            };
+            _queueCountStyle.normal.textColor = new Color(0.8f, 0.8f, 0.6f);
+
+            // Queued message style (dimmed)
+            _queuedMessageStyle = new GUIStyle(_userMessageStyle);
+            _queuedMessageStyle.normal.textColor = new Color(0.7f, 0.7f, 0.7f);
 
             _stylesInitialized = true;
         }
@@ -513,13 +527,25 @@ namespace KSPCapcom
             GUIStyle style;
             string prefix;
             bool alignRight;
+            string badge = "";
 
             switch (message.Role)
             {
                 case MessageRole.User:
-                    style = _userMessageStyle;
+                    // Use dimmed style for queued messages
+                    style = message.IsQueued ? _queuedMessageStyle : _userMessageStyle;
                     prefix = "<b>You:</b> ";
                     alignRight = true;
+
+                    // Add badge for queue state
+                    if (message.WasDropped)
+                    {
+                        badge = " <color=#ff6666>[dropped]</color>";
+                    }
+                    else if (message.IsQueued)
+                    {
+                        badge = " <color=#888888>[queued]</color>";
+                    }
                     break;
                 case MessageRole.Assistant:
                     style = _systemMessageStyle;
@@ -558,7 +584,7 @@ namespace KSPCapcom
 
             // Draw message box
             GUILayout.BeginVertical(HighLogic.Skin.box, GUILayout.MaxWidth(_windowRect.width * 0.85f));
-            GUILayout.Label($"<size=10><color=#888888>{timestamp}</color></size>", style);
+            GUILayout.Label($"<size=10><color=#888888>{timestamp}</color></size>{badge}", style);
             GUILayout.Label($"{prefix}{displayText}", style);
             GUILayout.EndVertical();
 
@@ -643,6 +669,12 @@ namespace KSPCapcom
                     CancelCurrentRequest();
                     CapcomCore.Log("User cancelled request via Stop button");
                 }
+
+                // Queue count indicator
+                if (_messageQueue.Count > 0)
+                {
+                    GUILayout.Label($"+{_messageQueue.Count}", _queueCountStyle, GUILayout.Width(25), GUILayout.Height(inputHeight));
+                }
             }
             else
             {
@@ -673,8 +705,15 @@ namespace KSPCapcom
                 return;
             }
 
-            // Add user message immediately for responsiveness
-            AddUserMessage(text);
+            // Detect if message will be queued before adding
+            bool willBeQueued = _responder.IsBusy || _pendingMessage != null;
+
+            // Add user message immediately for responsiveness, with queue state
+            var userMessage = ChatMessage.FromUser(text, isQueued: willBeQueued);
+            _messages.Add(userMessage);
+            TrimMessageHistory();
+            ScrollToBottom();
+            CapcomCore.Log($"[User] {text}");
 
             // Clear input immediately
             _inputText = "";
@@ -683,13 +722,21 @@ namespace KSPCapcom
             _focusInput = true;
 
             // If responder is busy, queue the request
-            if (_responder.IsBusy || _pendingMessage != null)
+            if (willBeQueued)
             {
-                _messageQueue.Enqueue(new MessageRequest(
+                bool wasDropped = _messageQueue.Enqueue(new MessageRequest(
                     text,
                     new List<ChatMessage>(_messages).AsReadOnly(),
-                    OnResponderComplete
+                    OnResponderComplete,
+                    userMessage
                 ));
+
+                // Show overflow warning if a message was dropped
+                if (wasDropped)
+                {
+                    AddSystemMessage("<color=#ffaa00>Queue full - oldest message dropped</color>");
+                }
+
                 CapcomCore.Log($"Message queued (queue size: {_messageQueue.Count})");
                 return;
             }
@@ -784,18 +831,23 @@ namespace KSPCapcom
             var next = _messageQueue.Dequeue();
             if (next != null)
             {
+                // Mark the user message as no longer queued
+                next.UserChatMessage?.MarkDequeued();
                 CapcomCore.Log($"Processing queued message (remaining: {_messageQueue.Count})");
                 ProcessUserMessage(next.UserMessage);
             }
         }
 
         /// <summary>
-        /// Cancel the current pending request.
+        /// Cancel the current pending request and clear the queue.
         /// </summary>
         public void CancelCurrentRequest()
         {
             _currentRequestCts?.Cancel();
             _responder.Cancel();
+
+            // Clear the queue (marks all queued messages as dequeued)
+            _messageQueue.Clear();
 
             if (_pendingMessage != null)
             {
@@ -905,15 +957,22 @@ namespace KSPCapcom
         public Action<ResponderResult> OnComplete { get; }
         public DateTime QueuedAt { get; }
 
+        /// <summary>
+        /// Reference to the user's ChatMessage in the UI for state updates.
+        /// </summary>
+        public ChatMessage UserChatMessage { get; }
+
         public MessageRequest(
             string userMessage,
             IReadOnlyList<ChatMessage> history,
-            Action<ResponderResult> onComplete)
+            Action<ResponderResult> onComplete,
+            ChatMessage userChatMessage = null)
         {
             UserMessage = userMessage;
             History = history;
             OnComplete = onComplete;
             QueuedAt = DateTime.UtcNow;
+            UserChatMessage = userChatMessage;
         }
     }
 
@@ -938,12 +997,22 @@ namespace KSPCapcom
         public int Count => _queue.Count;
         public bool HasPending => _queue.Count > 0;
 
-        public void Enqueue(MessageRequest request)
+        /// <summary>
+        /// Enqueue a message request. Returns true if a message was dropped due to overflow.
+        /// </summary>
+        public bool Enqueue(MessageRequest request)
         {
+            bool wasDropped = false;
+
             // Drop oldest if at capacity
             while (_queue.Count >= _maxQueueSize)
             {
                 var dropped = _queue.Dequeue();
+                wasDropped = true;
+
+                // Mark the user's chat message as dropped
+                dropped.UserChatMessage?.MarkDropped();
+
                 CapcomCore.LogWarning("Message queue full, dropping oldest request");
                 // Notify dropped request
                 dropped.OnComplete?.Invoke(
@@ -951,6 +1020,7 @@ namespace KSPCapcom
             }
 
             _queue.Enqueue(request);
+            return wasDropped;
         }
 
         public MessageRequest Dequeue()
@@ -968,6 +1038,8 @@ namespace KSPCapcom
             while (_queue.Count > 0)
             {
                 var request = _queue.Dequeue();
+                // Mark the user message as no longer queued
+                request.UserChatMessage?.MarkDequeued();
                 request.OnComplete?.Invoke(
                     ResponderResult.Fail("Request cancelled - queue cleared"));
             }
@@ -987,6 +1059,16 @@ namespace KSPCapcom
         /// Whether this message is still being generated (pending/streaming).
         /// </summary>
         public bool IsPending { get; private set; }
+
+        /// <summary>
+        /// Whether this message is currently queued awaiting processing.
+        /// </summary>
+        public bool IsQueued { get; private set; }
+
+        /// <summary>
+        /// Whether this message was dropped due to queue overflow.
+        /// </summary>
+        public bool WasDropped { get; private set; }
 
         /// <summary>
         /// Convenience property for backward compatibility.
@@ -1021,8 +1103,22 @@ namespace KSPCapcom
             IsPending = false;
         }
 
-        public static ChatMessage FromUser(string text) =>
-            new ChatMessage(text, MessageRole.User);
+        /// <summary>
+        /// Mark the message as no longer queued (now being processed).
+        /// </summary>
+        public void MarkDequeued() => IsQueued = false;
+
+        /// <summary>
+        /// Mark the message as dropped due to queue overflow.
+        /// </summary>
+        public void MarkDropped()
+        {
+            IsQueued = false;
+            WasDropped = true;
+        }
+
+        public static ChatMessage FromUser(string text, bool isQueued = false) =>
+            new ChatMessage(text, MessageRole.User) { IsQueued = isQueued };
 
         public static ChatMessage FromAssistant(string text) =>
             new ChatMessage(text, MessageRole.Assistant);
