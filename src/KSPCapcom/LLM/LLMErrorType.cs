@@ -15,6 +15,12 @@ namespace KSPCapcom.LLM
         /// <summary>Network connectivity issue (DNS, connection refused, etc.).</summary>
         Network,
 
+        /// <summary>DNS resolution failed - hostname cannot be resolved.</summary>
+        DnsResolutionFailed,
+
+        /// <summary>Connection refused - server unreachable or refusing connections.</summary>
+        ConnectionRefused,
+
         /// <summary>Request timed out waiting for response.</summary>
         Timeout,
 

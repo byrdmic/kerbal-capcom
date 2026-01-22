@@ -17,6 +17,9 @@
   <ItemGroup>
     <Compile Include="..\KSPCapcom\PromptBuilder.cs" Link="PromptBuilder.cs" />
     <Compile Include="..\KSPCapcom\CapcomSettings.cs" Link="CapcomSettings.cs" />
+    <Compile Include="..\KSPCapcom\LLM\ErrorMapper.cs" Link="ErrorMapper.cs" />
+    <Compile Include="..\KSPCapcom\LLM\LLMError.cs" Link="LLMError.cs" />
+    <Compile Include="..\KSPCapcom\LLM\LLMErrorType.cs" Link="LLMErrorType.cs" />
   </ItemGroup>
 
 </Project>

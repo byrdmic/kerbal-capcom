@@ -70,6 +70,18 @@ namespace KSPCapcom.LLM
             new LLMError(LLMErrorType.Network, message, isRetryable: true, suggestedRetryDelayMs: 2000);
 
         /// <summary>
+        /// Create a DNS resolution failed error.
+        /// </summary>
+        public static LLMError DnsResolutionFailed(string message = "Cannot resolve hostname") =>
+            new LLMError(LLMErrorType.DnsResolutionFailed, message, isRetryable: true, suggestedRetryDelayMs: 5000);
+
+        /// <summary>
+        /// Create a connection refused error.
+        /// </summary>
+        public static LLMError ConnectionRefused(string message = "Connection refused") =>
+            new LLMError(LLMErrorType.ConnectionRefused, message, isRetryable: true, suggestedRetryDelayMs: 3000);
+
+        /// <summary>
         /// Create an authentication error.
         /// </summary>
         public static LLMError Authentication(string message = "Authentication failed") =>

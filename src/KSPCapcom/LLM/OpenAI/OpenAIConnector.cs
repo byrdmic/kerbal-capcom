@@ -112,7 +112,17 @@ namespace KSPCapcom.LLM.OpenAI
                     #pragma warning disable CS0618 // isNetworkError/isHttpError are obsolete in newer Unity
                     if (webRequest.isNetworkError)
                     {
-                        return LLMResponse.Fail(LLMError.Network($"Cannot reach OpenAI. Check internet connection. ({webRequest.error})"));
+                        var errorType = ErrorMapper.ClassifyNetworkError(webRequest.error);
+
+                        switch (errorType)
+                        {
+                            case LLMErrorType.DnsResolutionFailed:
+                                return LLMResponse.Fail(LLMError.DnsResolutionFailed());
+                            case LLMErrorType.ConnectionRefused:
+                                return LLMResponse.Fail(LLMError.ConnectionRefused());
+                            default:
+                                return LLMResponse.Fail(LLMError.Network());
+                        }
                     }
 
                     // Handle success (no network error and no HTTP error)

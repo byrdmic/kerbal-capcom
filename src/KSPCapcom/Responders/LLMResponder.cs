@@ -108,54 +108,7 @@ namespace KSPCapcom.Responders
         /// </summary>
         private string GetUserFriendlyError(LLMError error)
         {
-            if (error == null)
-                return "Unknown error occurred";
-
-            switch (error.Type)
-            {
-                case LLMErrorType.NotConfigured:
-                    return "API key not configured - see secrets.cfg.template";
-
-                case LLMErrorType.Authentication:
-                    return "Invalid API key";
-
-                case LLMErrorType.Authorization:
-                    return "API access denied - check your API key permissions";
-
-                case LLMErrorType.RateLimit:
-                    if (error.SuggestedRetryDelayMs > 0)
-                    {
-                        return $"Rate limited. Try again in {error.SuggestedRetryDelayMs / 1000} seconds.";
-                    }
-                    return "Rate limited. Try again later.";
-
-                case LLMErrorType.ServerError:
-                    return "OpenAI server error. Try again later.";
-
-                case LLMErrorType.Network:
-                    return "Cannot reach OpenAI. Check internet connection.";
-
-                case LLMErrorType.Timeout:
-                    return "Request timed out. Check your connection and endpoint, or try again.";
-
-                case LLMErrorType.Cancelled:
-                    return "Request cancelled";
-
-                case LLMErrorType.ContextLengthExceeded:
-                    return "Conversation too long. Try clearing history.";
-
-                case LLMErrorType.ModelNotFound:
-                    return "Model not available. Check model setting.";
-
-                case LLMErrorType.ContentFiltered:
-                    return "Response was filtered by content policy.";
-
-                case LLMErrorType.InvalidRequest:
-                    return error.Message ?? "Invalid request";
-
-                default:
-                    return error.Message ?? "An error occurred";
-            }
+            return ErrorMapper.GetUserFriendlyMessage(error);
         }
     }
 }

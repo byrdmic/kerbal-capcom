@@ -87,6 +87,24 @@ These are situations where the mod should fail gracefully, not crash.
 
 ---
 
+## 6. Error Handling Scenarios
+
+Manual verification of error message mapping. These tests verify that transport and API errors produce user-friendly, actionable messages.
+
+| Scenario | How to Trigger | Expected Result |
+|----------|----------------|-----------------|
+| DNS failure | Set endpoint to `https://invalid.local.host/v1/chat` | Orange: "Cannot resolve hostname. Check endpoint URL in Settings." |
+| Connection refused | Set endpoint to `http://localhost:9999/v1/chat` | Orange: "Cannot connect to server. Is the endpoint running?" |
+| Auth failure (401) | Use invalid API key (e.g., `sk-invalid`) | Red: "Invalid API key. Check your API key in Settings." |
+| Server error (5xx) | (requires mock server returning 500) | Orange: "Provider server error (5xx). Will retry automatically." |
+
+**Notes:**
+- Orange messages indicate retryable errors
+- Red messages indicate non-retryable errors requiring user action
+- All error messages should be actionable (tell user what to check/do)
+
+---
+
 ## Quick Pass Summary
 
 After completing all steps, check:
