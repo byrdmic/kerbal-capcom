@@ -85,8 +85,12 @@ namespace KSPCapcom
                 () => _settings.MaxRetries
             );
 
-            // Create LLM responder wrapping the connector
-            var responder = new LLMResponder(connector);
+            // Create prompt builder with settings reference
+            // This builder generates system prompts with CAPCOM tone and Teach/Do mode switching
+            var promptBuilder = new PromptBuilder(() => _settings);
+
+            // Create LLM responder wrapping the connector and prompt builder
+            var responder = new LLMResponder(connector, promptBuilder);
 
             // Create chat panel with LLM responder and secrets
             _chatPanel = new ChatPanel(responder, _settings, _secrets);

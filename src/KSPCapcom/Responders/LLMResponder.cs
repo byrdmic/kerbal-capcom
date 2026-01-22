@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using KSPCapcom;
 using KSPCapcom.LLM;
 
 namespace KSPCapcom.Responders
@@ -13,15 +14,8 @@ namespace KSPCapcom.Responders
     public class LLMResponder : AsyncResponderBase
     {
         private readonly ILLMConnector _connector;
-        private readonly LLMRequestOptions _defaultOptions;
-
-        /// <summary>
-        /// Default system prompt for CAPCOM.
-        /// </summary>
-        private const string DEFAULT_SYSTEM_PROMPT =
-            "You are CAPCOM, the spacecraft communicator for Kerbal Space Program. " +
-            "You assist the player with mission planning, orbital mechanics, and spacecraft operations. " +
-            "Keep responses concise and helpful. Use terminology familiar to KSP players.";
+        private readonly PromptBuilder _promptBuilder;
+        private readonly LLMRequestOptions _baseOptions;
 
         public override string Name => $"LLM ({_connector.Name})";
 
@@ -29,20 +23,13 @@ namespace KSPCapcom.Responders
         /// Create a new LLM responder wrapping the given connector.
         /// </summary>
         /// <param name="connector">The LLM connector to use.</param>
-        /// <param name="options">Default request options (optional).</param>
-        public LLMResponder(ILLMConnector connector, LLMRequestOptions options = null)
+        /// <param name="promptBuilder">The prompt builder for generating system prompts.</param>
+        /// <param name="options">Base request options (optional). System prompt will be overwritten by promptBuilder.</param>
+        public LLMResponder(ILLMConnector connector, PromptBuilder promptBuilder, LLMRequestOptions options = null)
         {
             _connector = connector ?? throw new ArgumentNullException(nameof(connector));
-            _defaultOptions = options ?? new LLMRequestOptions
-            {
-                SystemPrompt = DEFAULT_SYSTEM_PROMPT
-            };
-
-            // Ensure system prompt is set if not specified
-            if (string.IsNullOrEmpty(_defaultOptions.SystemPrompt))
-            {
-                _defaultOptions.SystemPrompt = DEFAULT_SYSTEM_PROMPT;
-            }
+            _promptBuilder = promptBuilder ?? throw new ArgumentNullException(nameof(promptBuilder));
+            _baseOptions = options ?? new LLMRequestOptions();
         }
 
         protected override async Task<ResponderResult> DoRespondAsync(
@@ -59,8 +46,13 @@ namespace KSPCapcom.Responders
             // Convert conversation history to LLMMessage list
             var messages = ConvertHistory(conversationHistory, userMessage);
 
+            // Build request options with current system prompt from prompt builder
+            // This ensures mode changes take effect immediately
+            var options = _baseOptions.Clone();
+            options.SystemPrompt = _promptBuilder.BuildSystemPrompt();
+
             // Send request
-            var response = await _connector.SendChatAsync(messages, _defaultOptions, cancellationToken);
+            var response = await _connector.SendChatAsync(messages, options, cancellationToken);
 
             // Convert response to ResponderResult
             if (response.Success)
