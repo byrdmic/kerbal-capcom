@@ -172,8 +172,8 @@ namespace KSPCapcom.LLM.OpenAI
                     // Accumulate complete response
                     _completeResponse.Append(deltaContent);
 
-                    // Notify callback
-                    _onChunk?.Invoke(deltaContent);
+                    // Notify callback with accumulated text
+                    _onChunk?.Invoke(_completeResponse.ToString());
                 }
             }
             catch (Exception ex)
