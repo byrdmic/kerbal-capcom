@@ -84,6 +84,7 @@
     <Compile Include="LLM\RetryingConnector.cs" />
     <Compile Include="MainThreadDispatcher.cs" />
     <Compile Include="MessageRole.cs" />
+    <Compile Include="PromptBuilder.cs" />
     <Compile Include="Responders\AsyncResponderBase.cs" />
     <Compile Include="Responders\DelayedEchoResponder.cs" />
     <Compile Include="Responders\EchoResponder.cs" />

@@ -51,6 +51,9 @@ namespace KSPCapcom.Responders
             var options = _baseOptions.Clone();
             options.SystemPrompt = _promptBuilder.BuildSystemPrompt();
 
+            // Log prompt version and mode for debugging
+            CapcomCore.Log($"LLMResponder: Using prompt v{PromptBuilder.PromptVersion}, mode={_promptBuilder.GetCurrentMode()}");
+
             // Send request
             var response = await _connector.SendChatAsync(messages, options, cancellationToken);
 

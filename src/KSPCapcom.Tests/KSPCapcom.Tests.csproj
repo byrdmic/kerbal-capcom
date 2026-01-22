@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net472</TargetFramework>
+    <IsPackable>false</IsPackable>
+    <RootNamespace>KSPCapcom.Tests</RootNamespace>
+    <LangVersion>9.0</LangVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
+    <PackageReference Include="NUnit" Version="3.14.0" />
+    <PackageReference Include="NUnit3TestAdapter" Version="4.5.0" />
+  </ItemGroup>
+
+  <!-- Link source files from main project to avoid Unity dependencies -->
+  <ItemGroup>
+    <Compile Include="..\KSPCapcom\PromptBuilder.cs" Link="PromptBuilder.cs" />
+    <Compile Include="..\KSPCapcom\CapcomSettings.cs" Link="CapcomSettings.cs" />
+  </ItemGroup>
+
+</Project>

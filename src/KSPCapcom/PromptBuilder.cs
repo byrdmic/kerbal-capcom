@@ -28,6 +28,13 @@ namespace KSPCapcom
             "Do not pilot the spacecraft directly.";
 
         /// <summary>
+        /// Version identifier for the prompt format.
+        /// Increment when making significant changes to prompt structure or content.
+        /// Format: Major.Minor.Patch (semantic versioning)
+        /// </summary>
+        public const string PromptVersion = "1.1.0";
+
+        /// <summary>
         /// Core CAPCOM identity and voice guidance.
         /// Establishes the persona without mode-specific instructions.
         /// </summary>
