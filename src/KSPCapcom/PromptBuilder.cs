@@ -1,5 +1,8 @@
 using System;
 using System.Text;
+#if KSP_PRESENT
+using KSPCapcom.Editor;
+#endif
 
 namespace KSPCapcom
 {
@@ -233,5 +236,44 @@ namespace KSPCapcom
             var builder = new PromptBuilder(testSettings);
             return builder.BuildSystemPrompt();
         }
+
+#if KSP_PRESENT
+        /// <summary>
+        /// Build craft context for inclusion in prompts when in the editor.
+        /// Returns an empty string if not in editor or no craft is available.
+        /// </summary>
+        /// <returns>Craft context summary, or empty string if unavailable.</returns>
+        public string BuildCraftContext()
+        {
+            try
+            {
+                // Only provide craft context when in editor
+                if (!HighLogic.LoadedSceneIsEditor)
+                {
+                    return string.Empty;
+                }
+
+                // Get the current snapshot from the monitor
+                var monitor = EditorCraftMonitor.Instance;
+                if (monitor == null)
+                {
+                    return string.Empty;
+                }
+
+                var snapshot = monitor.CurrentSnapshot;
+                if (snapshot == null || snapshot.IsEmpty)
+                {
+                    return string.Empty;
+                }
+
+                return snapshot.ToPromptSummary();
+            }
+            catch (Exception ex)
+            {
+                CapcomCore.LogWarning($"PromptBuilder.BuildCraftContext failed: {ex.Message}");
+                return string.Empty;
+            }
+        }
+#endif
     }
 }

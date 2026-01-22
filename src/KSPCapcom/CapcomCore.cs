@@ -1,6 +1,7 @@
 using System;
 using System.Reflection;
 using UnityEngine;
+using KSPCapcom.Editor;
 using KSPCapcom.LLM;
 using KSPCapcom.LLM.OpenAI;
 using KSPCapcom.Responders;
@@ -29,6 +30,7 @@ namespace KSPCapcom
         private ChatPanel _chatPanel;
         private CapcomSettings _settings;
         private SecretStore _secrets;
+        private EditorCraftMonitor _editorMonitor;
 
         /// <summary>
         /// Current CAPCOM settings.
@@ -113,6 +115,26 @@ namespace KSPCapcom
                 Log($"Loaded in scene: {currentScene}");
             }
             _lastLoggedScene = currentScene;
+
+            // Initialize editor craft monitor when in VAB/SPH
+            if (HighLogic.LoadedSceneIsEditor)
+            {
+                InitializeEditorMonitor();
+            }
+        }
+
+        /// <summary>
+        /// Initialize the EditorCraftMonitor for VAB/SPH scenes.
+        /// </summary>
+        private void InitializeEditorMonitor()
+        {
+            if (_editorMonitor != null)
+            {
+                return;
+            }
+
+            _editorMonitor = gameObject.AddComponent<EditorCraftMonitor>();
+            Log("EditorCraftMonitor initialized");
         }
 
         private void OnDestroy()
@@ -124,6 +146,10 @@ namespace KSPCapcom
             _toolbarButton = null;
 
             _chatPanel = null;
+
+            // EditorCraftMonitor is a component on this GameObject,
+            // so it will be destroyed automatically when this is destroyed.
+            _editorMonitor = null;
 
             if (_instance == this)
             {

@@ -18,7 +18,7 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>..\..\deploy\GameData\KSPCapcom\Plugins\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <DefineConstants>DEBUG;TRACE;KSP_PRESENT</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
@@ -26,7 +26,7 @@
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>..\..\deploy\GameData\KSPCapcom\Plugins\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
+    <DefineConstants>TRACE;KSP_PRESENT</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
@@ -72,6 +72,12 @@
     <Compile Include="CapcomCore.cs" />
     <Compile Include="CapcomSettings.cs" />
     <Compile Include="ChatPanel.cs" />
+    <Compile Include="Editor\EditorCraftMonitor.cs" />
+    <Compile Include="Editor\EditorCraftSnapshot.cs" />
+    <Compile Include="Editor\PartCategorizer.cs" />
+    <Compile Include="Editor\PartSummaries.cs" />
+    <Compile Include="Editor\ResourceSummary.cs" />
+    <Compile Include="Editor\StagingSummary.cs" />
     <Compile Include="LLM\ILLMConnector.cs" />
     <Compile Include="LLM\LLMError.cs" />
     <Compile Include="LLM\LLMErrorType.cs" />
