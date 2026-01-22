@@ -229,6 +229,7 @@ namespace KSPCapcom
             {
                 wordWrap = true,
                 richText = true,
+                alignment = TextAnchor.UpperLeft,
                 padding = new RectOffset(8, 8, 4, 4),
                 margin = new RectOffset(0, 0, 2, 2)
             };
