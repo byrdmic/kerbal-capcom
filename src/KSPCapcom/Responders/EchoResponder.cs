@@ -18,18 +18,21 @@ namespace KSPCapcom.Responders
         public void Respond(
             string userMessage,
             IReadOnlyList<ChatMessage> conversationHistory,
-            Action<ResponderResult> onComplete)
+            Action<ResponderResult> onComplete,
+            Action<string> onStreamChunk = null)
         {
             // Delegate to cancellation-aware overload
-            Respond(userMessage, conversationHistory, CancellationToken.None, onComplete);
+            Respond(userMessage, conversationHistory, CancellationToken.None, onComplete, onStreamChunk);
         }
 
         public void Respond(
             string userMessage,
             IReadOnlyList<ChatMessage> conversationHistory,
             CancellationToken cancellationToken,
-            Action<ResponderResult> onComplete)
+            Action<ResponderResult> onComplete,
+            Action<string> onStreamChunk = null)
         {
+            // Echo responder does not support streaming, so onStreamChunk is ignored
             if (onComplete == null)
             {
                 CapcomCore.LogWarning("EchoResponder.Respond called with null callback");

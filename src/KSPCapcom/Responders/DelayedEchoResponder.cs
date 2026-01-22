@@ -33,8 +33,10 @@ namespace KSPCapcom.Responders
         protected override async Task<ResponderResult> DoRespondAsync(
             string userMessage,
             IReadOnlyList<ChatMessage> conversationHistory,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken,
+            Action<string> onStreamChunk)
         {
+            // Delayed echo responder does not support streaming, so onStreamChunk is ignored
             CapcomCore.Log($"DelayedEchoResponder: Starting {_delayMs}ms delay on thread {Thread.CurrentThread.ManagedThreadId}");
 
             // Simulate async work with cancellation support

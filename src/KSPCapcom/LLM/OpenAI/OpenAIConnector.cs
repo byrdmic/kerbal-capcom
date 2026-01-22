@@ -9,10 +9,10 @@ using UnityEngine.Networking;
 namespace KSPCapcom.LLM.OpenAI
 {
     /// <summary>
-    /// OpenAI API connector implementing ILLMConnector.
+    /// OpenAI API connector implementing ILLMStreamingConnector.
     /// Uses UnityWebRequest for async HTTP requests (compatible with KSP's Mono runtime).
     /// </summary>
-    public class OpenAIConnector : ILLMConnector
+    public class OpenAIConnector : ILLMStreamingConnector
     {
         private const string OPENAI_ENDPOINT = "https://api.openai.com/v1/chat/completions";
         private const string DEFAULT_MODEL = "gpt-4o-mini";
@@ -29,6 +29,11 @@ namespace KSPCapcom.LLM.OpenAI
         /// Whether this connector is properly configured and ready.
         /// </summary>
         public bool IsConfigured => !string.IsNullOrEmpty(_getApiKey?.Invoke());
+
+        /// <summary>
+        /// Whether this connector supports streaming responses.
+        /// </summary>
+        public bool SupportsStreaming => true;
 
         /// <summary>
         /// Create a new OpenAI connector.
@@ -68,7 +73,7 @@ namespace KSPCapcom.LLM.OpenAI
             try
             {
                 // Build request
-                var request = BuildRequest(messages, options);
+                var request = BuildRequest(messages, options, streaming: false);
                 var jsonContent = request.ToJson();
                 var jsonBytes = Encoding.UTF8.GetBytes(jsonContent);
 
@@ -148,13 +153,124 @@ namespace KSPCapcom.LLM.OpenAI
             }
         }
 
-        private ChatCompletionRequest BuildRequest(IReadOnlyList<LLMMessage> messages, LLMRequestOptions options)
+        /// <summary>
+        /// Send a chat completion request with streaming response.
+        /// </summary>
+        public async Task<LLMResponse> SendChatStreamingAsync(
+            IReadOnlyList<LLMMessage> messages,
+            LLMRequestOptions options,
+            Action<string> onChunk,
+            CancellationToken cancellationToken)
+        {
+            // Check configuration
+            var apiKey = _getApiKey();
+            if (string.IsNullOrEmpty(apiKey))
+            {
+                return LLMResponse.NotConfigured("API key not configured - see secrets.cfg.template");
+            }
+
+            // Check for cancellation
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return LLMResponse.Cancelled();
+            }
+
+            var stopwatch = Stopwatch.StartNew();
+            var timeoutMs = options?.TimeoutMs ?? LLMRequestOptions.DefaultTimeoutMs;
+
+            try
+            {
+                // Build streaming request
+                var request = BuildRequest(messages, options, streaming: true);
+                var jsonContent = request.ToJson();
+                var jsonBytes = Encoding.UTF8.GetBytes(jsonContent);
+
+                // Create UnityWebRequest with streaming handler
+                using (var webRequest = new UnityWebRequest(OPENAI_ENDPOINT, "POST"))
+                {
+                    webRequest.uploadHandler = new UploadHandlerRaw(jsonBytes);
+                    webRequest.downloadHandler = new StreamingDownloadHandler(onChunk);
+                    webRequest.SetRequestHeader("Content-Type", "application/json");
+                    webRequest.SetRequestHeader("Authorization", $"Bearer {apiKey}");
+
+                    // Send request
+                    var asyncOp = webRequest.SendWebRequest();
+
+                    // Poll until complete, cancelled, or timeout
+                    while (!asyncOp.isDone)
+                    {
+                        if (cancellationToken.IsCancellationRequested)
+                        {
+                            webRequest.Abort();
+                            return LLMResponse.Cancelled();
+                        }
+
+                        if (stopwatch.ElapsedMilliseconds > timeoutMs)
+                        {
+                            webRequest.Abort();
+                            LogRequest(stopwatch.ElapsedMilliseconds, "timeout");
+                            return LLMResponse.Fail(LLMError.Timeout("Request timed out. Try again."));
+                        }
+
+                        await Task.Yield();
+                    }
+
+                    var streamingHandler = (StreamingDownloadHandler)webRequest.downloadHandler;
+                    var responseBody = streamingHandler.CompleteResponse;
+                    var statusCode = (int)webRequest.responseCode;
+                    var statusClass = GetStatusClass(statusCode);
+
+                    LogRequest(stopwatch.ElapsedMilliseconds, statusClass);
+
+                    // Handle connection errors (using legacy API for KSP's Unity version)
+                    #pragma warning disable CS0618 // isNetworkError/isHttpError are obsolete in newer Unity
+                    if (webRequest.isNetworkError)
+                    {
+                        var errorType = ErrorMapper.ClassifyNetworkError(webRequest.error);
+
+                        switch (errorType)
+                        {
+                            case LLMErrorType.DnsResolutionFailed:
+                                return LLMResponse.Fail(LLMError.DnsResolutionFailed());
+                            case LLMErrorType.ConnectionRefused:
+                                return LLMResponse.Fail(LLMError.ConnectionRefused());
+                            default:
+                                return LLMResponse.Fail(LLMError.Network());
+                        }
+                    }
+
+                    // Handle success (no network error and no HTTP error)
+                    if (!webRequest.isHttpError)
+                    {
+                        // Return the complete streamed response
+                        return LLMResponse.Ok(responseBody, usage: null, model: request.Model);
+                    }
+                    #pragma warning restore CS0618
+
+                    // Handle HTTP errors
+                    return ParseErrorResponse(statusCode, responseBody, webRequest);
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                return LLMResponse.Cancelled();
+            }
+            catch (Exception ex)
+            {
+                LogRequest(stopwatch.ElapsedMilliseconds, "exception");
+                CapcomCore.LogError($"OpenAI streaming request failed: {ex.Message}");
+                return LLMResponse.Fail(LLMError.Unknown($"Unexpected error: {ex.Message}"));
+            }
+        }
+
+        private ChatCompletionRequest BuildRequest(IReadOnlyList<LLMMessage> messages, LLMRequestOptions options, bool streaming = false)
         {
             var request = new ChatCompletionRequest
             {
                 Model = options?.Model ?? _getModel() ?? DEFAULT_MODEL,
                 Temperature = options?.Temperature ?? LLMRequestOptions.DefaultTemperature,
-                MaxTokens = options?.MaxTokens ?? LLMRequestOptions.DefaultMaxTokens
+                MaxTokens = options?.MaxTokens ?? LLMRequestOptions.DefaultMaxTokens,
+                Stream = streaming
             };
 
             // Add system prompt if specified

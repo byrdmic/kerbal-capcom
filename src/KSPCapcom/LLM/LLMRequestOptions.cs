@@ -9,7 +9,7 @@ namespace KSPCapcom.LLM
         /// <summary>
         /// Default temperature for response generation.
         /// </summary>
-        public const float DefaultTemperature = 0.7f;
+        public const float DefaultTemperature = 1.0f;
 
         /// <summary>
         /// Default maximum tokens in the response.
@@ -48,6 +48,11 @@ namespace KSPCapcom.LLM
         public int TimeoutMs { get; set; } = DefaultTimeoutMs;
 
         /// <summary>
+        /// Whether to enable streaming responses (if supported by the connector).
+        /// </summary>
+        public bool EnableStreaming { get; set; } = true;
+
+        /// <summary>
         /// Create options with default values.
         /// </summary>
         public LLMRequestOptions()
@@ -79,7 +84,8 @@ namespace KSPCapcom.LLM
                 MaxTokens = MaxTokens,
                 Model = Model,
                 SystemPrompt = SystemPrompt,
-                TimeoutMs = TimeoutMs
+                TimeoutMs = TimeoutMs,
+                EnableStreaming = EnableStreaming
             };
         }
     }

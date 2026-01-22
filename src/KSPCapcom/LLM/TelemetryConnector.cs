@@ -10,7 +10,7 @@ namespace KSPCapcom.LLM
     /// Decorator that adds telemetry logging to any ILLMConnector.
     /// Logs START and END events with correlation ID, duration, and outcome.
     /// </summary>
-    public class TelemetryConnector : ILLMConnector
+    public class TelemetryConnector : ILLMStreamingConnector
     {
         private readonly ILLMConnector _inner;
 
@@ -31,6 +31,7 @@ namespace KSPCapcom.LLM
 
         public string Name => _inner.Name;
         public bool IsConfigured => _inner.IsConfigured;
+        public bool SupportsStreaming => (_inner is ILLMStreamingConnector s) && s.SupportsStreaming;
 
         public TelemetryConnector(ILLMConnector inner)
         {
@@ -54,6 +55,41 @@ namespace KSPCapcom.LLM
             var (outcome, code) = ClassifyOutcome(response);
 
             Log($"TELEM|END|rid={rid}|ms={stopwatch.ElapsedMilliseconds}|outcome={outcome}|code={code}");
+
+            return response;
+        }
+
+        public async Task<LLMResponse> SendChatStreamingAsync(
+            IReadOnlyList<LLMMessage> messages,
+            LLMRequestOptions options,
+            Action<string> onChunk,
+            CancellationToken cancellationToken)
+        {
+            if (!(_inner is ILLMStreamingConnector streamingConnector))
+            {
+                throw new NotSupportedException("Inner connector does not support streaming");
+            }
+
+            var rid = GenerateRequestId();
+            var model = options?.Model ?? "default";
+            var stopwatch = Stopwatch.StartNew();
+            var chunkCount = 0;
+
+            Log($"TELEM|START|rid={rid}|backend={Name}|model={model}|streaming=true");
+
+            // Wrap the chunk callback to count chunks
+            Action<string> wrappedOnChunk = (chunk) =>
+            {
+                chunkCount++;
+                onChunk?.Invoke(chunk);
+            };
+
+            var response = await streamingConnector.SendChatStreamingAsync(messages, options, wrappedOnChunk, cancellationToken);
+
+            stopwatch.Stop();
+            var (outcome, code) = ClassifyOutcome(response);
+
+            Log($"TELEM|END|rid={rid}|ms={stopwatch.ElapsedMilliseconds}|outcome={outcome}|code={code}|chunks={chunkCount}");
 
             return response;
         }

@@ -20,6 +20,7 @@ namespace KSPCapcom.LLM.OpenAI
         public List<ChatMessageDto> Messages { get; set; } = new List<ChatMessageDto>();
         public float? Temperature { get; set; }
         public int? MaxTokens { get; set; }
+        public bool Stream { get; set; }
 
         /// <summary>
         /// Serialize this request to JSON.
@@ -46,7 +47,12 @@ namespace KSPCapcom.LLM.OpenAI
 
             if (MaxTokens.HasValue)
             {
-                sb.Append($",\"max_tokens\":{MaxTokens.Value}");
+                sb.Append($",\"max_completion_tokens\":{MaxTokens.Value}");
+            }
+
+            if (Stream)
+            {
+                sb.Append(",\"stream\":true");
             }
 
             sb.Append("}");

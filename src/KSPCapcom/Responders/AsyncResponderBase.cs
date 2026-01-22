@@ -32,9 +32,10 @@ namespace KSPCapcom.Responders
         public void Respond(
             string userMessage,
             IReadOnlyList<ChatMessage> conversationHistory,
-            Action<ResponderResult> onComplete)
+            Action<ResponderResult> onComplete,
+            Action<string> onStreamChunk = null)
         {
-            Respond(userMessage, conversationHistory, CancellationToken.None, onComplete);
+            Respond(userMessage, conversationHistory, CancellationToken.None, onComplete, onStreamChunk);
         }
 
         /// <summary>
@@ -44,7 +45,8 @@ namespace KSPCapcom.Responders
             string userMessage,
             IReadOnlyList<ChatMessage> conversationHistory,
             CancellationToken externalToken,
-            Action<ResponderResult> onComplete)
+            Action<ResponderResult> onComplete,
+            Action<string> onStreamChunk = null)
         {
             if (onComplete == null)
             {
@@ -77,7 +79,7 @@ namespace KSPCapcom.Responders
                 ResponderResult result;
                 try
                 {
-                    result = await DoRespondAsync(userMessage, conversationHistory, token);
+                    result = await DoRespondAsync(userMessage, conversationHistory, token, onStreamChunk);
                 }
                 catch (OperationCanceledException)
                 {
@@ -111,11 +113,13 @@ namespace KSPCapcom.Responders
         /// <param name="userMessage">The user's input text.</param>
         /// <param name="conversationHistory">Previous messages for context.</param>
         /// <param name="cancellationToken">Token to observe for cancellation.</param>
+        /// <param name="onStreamChunk">Optional callback for streaming chunks (already marshalled to main thread).</param>
         /// <returns>The response result.</returns>
         protected abstract Task<ResponderResult> DoRespondAsync(
             string userMessage,
             IReadOnlyList<ChatMessage> conversationHistory,
-            CancellationToken cancellationToken);
+            CancellationToken cancellationToken,
+            Action<string> onStreamChunk);
 
         /// <summary>
         /// Cancel any pending response generation.

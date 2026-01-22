@@ -9,8 +9,9 @@ namespace KSPCapcom.LLM
     /// <summary>
     /// Decorator that adds retry logic to any ILLMConnector.
     /// Retries only on transient errors (IsRetryable == true) with jittered exponential backoff.
+    /// Note: Streaming requests do not support retry logic.
     /// </summary>
-    public class RetryingConnector : ILLMConnector
+    public class RetryingConnector : ILLMStreamingConnector
     {
         private readonly ILLMConnector _inner;
         private readonly Func<bool> _getEnabled;
@@ -19,6 +20,7 @@ namespace KSPCapcom.LLM
 
         public string Name => _inner.Name;
         public bool IsConfigured => _inner.IsConfigured;
+        public bool SupportsStreaming => (_inner is ILLMStreamingConnector s) && s.SupportsStreaming;
 
         public RetryingConnector(
             ILLMConnector inner,
@@ -136,6 +138,24 @@ namespace KSPCapcom.LLM
 
             // Should not reach here, but return last response as fallback
             return lastResponse ?? LLMResponse.Fail(LLMError.Unknown("Retry loop exited unexpectedly"));
+        }
+
+        public async Task<LLMResponse> SendChatStreamingAsync(
+            IReadOnlyList<LLMMessage> messages,
+            LLMRequestOptions options,
+            Action<string> onChunk,
+            CancellationToken cancellationToken)
+        {
+            if (!(_inner is ILLMStreamingConnector streamingConnector))
+            {
+                throw new NotSupportedException("Inner connector does not support streaming");
+            }
+
+            // Streaming requests do not support retry logic (partial data already consumed)
+            // Pass through directly to inner connector
+            CapcomCore.Log("Streaming request - retry logic disabled");
+
+            return await streamingConnector.SendChatStreamingAsync(messages, options, onChunk, cancellationToken);
         }
     }
 }

@@ -764,13 +764,27 @@ namespace KSPCapcom
             // Create cancellation token for this request (M2 ready)
             _currentRequestCts = new CancellationTokenSource();
 
-            // Pass conversation history and cancellation token
+            // Pass conversation history, cancellation token, and streaming callback
             _responder.Respond(
                 userText,
                 _messages.AsReadOnly(),
                 _currentRequestCts.Token,
-                OnResponderComplete
+                OnResponderComplete,
+                OnStreamChunk
             );
+        }
+
+        /// <summary>
+        /// Callback when a streaming chunk is received (accumulated text so far).
+        /// Called on Unity main thread.
+        /// </summary>
+        private void OnStreamChunk(string accumulatedText)
+        {
+            if (_pendingMessage != null)
+            {
+                _pendingMessage.UpdateText(accumulatedText);
+                ScrollToBottom();
+            }
         }
 
         /// <summary>
@@ -783,7 +797,18 @@ namespace KSPCapcom
             {
                 if (result.Success)
                 {
-                    _pendingMessage.Complete(result.Text);
+                    // If streaming was used, text is already set via OnStreamChunk
+                    // Just mark as complete. Otherwise, set the text now.
+                    if (string.IsNullOrEmpty(_pendingMessage.Text) || _pendingMessage.Text == "CAPCOM is thinking...")
+                    {
+                        // Non-streaming or streaming with no chunks received
+                        _pendingMessage.Complete(result.Text);
+                    }
+                    else
+                    {
+                        // Streaming was used, text already updated
+                        _pendingMessage.Complete();
+                    }
                     CapcomCore.Log($"[Assistant] {result.Text}");
                 }
                 else

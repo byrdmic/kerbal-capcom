@@ -35,7 +35,8 @@ namespace KSPCapcom.Responders
         protected override async Task<ResponderResult> DoRespondAsync(
             string userMessage,
             IReadOnlyList<ChatMessage> conversationHistory,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken,
+            Action<string> onStreamChunk)
         {
             // Check if connector is configured
             if (!_connector.IsConfigured)
@@ -54,8 +55,32 @@ namespace KSPCapcom.Responders
             // Log prompt version and mode for debugging
             CapcomCore.Log($"LLMResponder: Using prompt v{PromptBuilder.PromptVersion}, mode={_promptBuilder.GetCurrentMode()}");
 
-            // Send request
-            var response = await _connector.SendChatAsync(messages, options, cancellationToken);
+            // Check if streaming should be used
+            bool useStreaming = options.EnableStreaming
+                && onStreamChunk != null
+                && _connector is ILLMStreamingConnector streamingConnector
+                && streamingConnector.SupportsStreaming;
+
+            LLMResponse response;
+
+            if (useStreaming)
+            {
+                // Use streaming with thread-safe callback marshalling
+                var streamingConn = (ILLMStreamingConnector)_connector;
+
+                // Wrap callback to marshal to main thread
+                Action<string> threadSafeChunk = (chunk) =>
+                {
+                    MainThreadDispatcher.Instance.Enqueue(() => onStreamChunk(chunk));
+                };
+
+                response = await streamingConn.SendChatStreamingAsync(messages, options, threadSafeChunk, cancellationToken);
+            }
+            else
+            {
+                // Use non-streaming request
+                response = await _connector.SendChatAsync(messages, options, cancellationToken);
+            }
 
             // Convert response to ResponderResult
             if (response.Success)

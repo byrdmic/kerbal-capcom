@@ -45,10 +45,13 @@ namespace KSPCapcom.Responders
         /// <param name="conversationHistory">Previous messages for context.</param>
         /// <param name="onComplete">Callback invoked when response is ready.
         /// MUST be invoked on the Unity main thread.</param>
+        /// <param name="onStreamChunk">Optional callback invoked for each streaming chunk (accumulated text).
+        /// MUST be invoked on the Unity main thread. Only called if streaming is supported and enabled.</param>
         void Respond(
             string userMessage,
             IReadOnlyList<ChatMessage> conversationHistory,
-            Action<ResponderResult> onComplete
+            Action<ResponderResult> onComplete,
+            Action<string> onStreamChunk = null
         );
 
         /// <summary>
@@ -59,11 +62,14 @@ namespace KSPCapcom.Responders
         /// <param name="cancellationToken">Token to observe for cancellation.</param>
         /// <param name="onComplete">Callback invoked when response is ready.
         /// MUST be invoked on the Unity main thread.</param>
+        /// <param name="onStreamChunk">Optional callback invoked for each streaming chunk (accumulated text).
+        /// MUST be invoked on the Unity main thread. Only called if streaming is supported and enabled.</param>
         void Respond(
             string userMessage,
             IReadOnlyList<ChatMessage> conversationHistory,
             CancellationToken cancellationToken,
-            Action<ResponderResult> onComplete
+            Action<ResponderResult> onComplete,
+            Action<string> onStreamChunk = null
         );
 
         /// <summary>
