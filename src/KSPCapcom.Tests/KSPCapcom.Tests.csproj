@@ -20,6 +20,13 @@
     <Compile Include="..\KSPCapcom\LLM\ErrorMapper.cs" Link="ErrorMapper.cs" />
     <Compile Include="..\KSPCapcom\LLM\LLMError.cs" Link="LLMError.cs" />
     <Compile Include="..\KSPCapcom\LLM\LLMErrorType.cs" Link="LLMErrorType.cs" />
+    <Compile Include="..\KSPCapcom\LLM\TelemetryConnector.cs" Link="TelemetryConnector.cs" />
+    <Compile Include="..\KSPCapcom\LLM\ILLMConnector.cs" Link="ILLMConnector.cs" />
+    <Compile Include="..\KSPCapcom\LLM\LLMMessage.cs" Link="LLMMessage.cs" />
+    <Compile Include="..\KSPCapcom\LLM\LLMRequestOptions.cs" Link="LLMRequestOptions.cs" />
+    <Compile Include="..\KSPCapcom\LLM\LLMResponse.cs" Link="LLMResponse.cs" />
+    <Compile Include="..\KSPCapcom\LLM\LLMUsage.cs" Link="LLMUsage.cs" />
+    <Compile Include="..\KSPCapcom\MessageRole.cs" Link="MessageRole.cs" />
   </ItemGroup>
 
 </Project>

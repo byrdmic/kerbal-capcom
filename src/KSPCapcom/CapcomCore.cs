@@ -52,6 +52,9 @@ namespace KSPCapcom
 
             _instance = this;
 
+            // Initialize telemetry logging
+            TelemetryConnector.LogAction = Log;
+
             // Log version once on first load
             if (!_versionLogged)
             {
@@ -79,11 +82,14 @@ namespace KSPCapcom
             );
 
             // Wrap with retry logic (off by default)
-            var connector = new RetryingConnector(
+            var retryingConnector = new RetryingConnector(
                 openAIConnector,
                 () => _settings.RetryEnabled,
                 () => _settings.MaxRetries
             );
+
+            // Wrap with telemetry logging (outermost to capture total duration including retries)
+            var connector = new TelemetryConnector(retryingConnector);
 
             // Create prompt builder with settings reference
             // This builder generates system prompts with CAPCOM tone and Teach/Do mode switching
