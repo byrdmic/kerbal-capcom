@@ -104,6 +104,12 @@ Any unchecked: Note which step failed and check log for details.
 
 ---
 
+## Related Tests
+
+- **[TEACH_DO_TRANSCRIPT.md](./TEACH_DO_TRANSCRIPT.md)** — Acceptance test for Teach/Do mode toggle. Run after basic chat works.
+
+---
+
 ## Troubleshooting
 
 ### Mod not loading at all
