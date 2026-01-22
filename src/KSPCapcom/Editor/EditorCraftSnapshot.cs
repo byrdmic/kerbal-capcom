@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using KSPCapcom.Editor.Calculators;
 
 namespace KSPCapcom.Editor
 {
@@ -22,6 +23,24 @@ namespace KSPCapcom.Editor
         public IReadOnlyList<DecouplerSummary> Decouplers { get; }
         public IReadOnlyList<ResourceSummary> Resources { get; }
         public StagingSummary Staging { get; }
+
+        private ReadinessMetrics _cachedMetrics;
+
+        /// <summary>
+        /// Derived readiness metrics calculated on-demand.
+        /// Includes TWR, delta-V, control authority, and staging validation.
+        /// </summary>
+        public ReadinessMetrics Readiness
+        {
+            get
+            {
+                if (_cachedMetrics == null)
+                {
+                    _cachedMetrics = ReadinessCalculator.Calculate(this);
+                }
+                return _cachedMetrics;
+            }
+        }
 
         /// <summary>
         /// Whether this snapshot represents an empty or invalid craft.
@@ -285,6 +304,9 @@ namespace KSPCapcom.Editor
                 if (rcsParts > 0) controlParts.Add($"{rcsParts} RCS");
                 sb.AppendLine($"Control: {string.Join(", ", controlParts)}");
             }
+
+            // Add readiness metrics
+            sb.Append(Readiness.ToPromptSummary());
 
             return sb.ToString();
         }

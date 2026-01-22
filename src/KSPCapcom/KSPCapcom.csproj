@@ -78,6 +78,12 @@
     <Compile Include="Editor\PartSummaries.cs" />
     <Compile Include="Editor\ResourceSummary.cs" />
     <Compile Include="Editor\StagingSummary.cs" />
+    <Compile Include="Editor\ReadinessMetrics.cs" />
+    <Compile Include="Editor\Calculators\ReadinessCalculator.cs" />
+    <Compile Include="Editor\Calculators\TWRCalculator.cs" />
+    <Compile Include="Editor\Calculators\DeltaVCalculator.cs" />
+    <Compile Include="Editor\Calculators\ControlAuthorityCalculator.cs" />
+    <Compile Include="Editor\Calculators\StagingValidator.cs" />
     <Compile Include="LLM\ILLMConnector.cs" />
     <Compile Include="LLM\LLMError.cs" />
     <Compile Include="LLM\LLMErrorType.cs" />
