@@ -28,6 +28,7 @@ namespace KSPCapcom
 
         private ToolbarButton _toolbarButton;
         private ChatPanel _chatPanel;
+        private ReadinessPanel _readinessPanel;
         private CapcomSettings _settings;
         private SecretStore _secrets;
         private EditorCraftMonitor _editorMonitor;
@@ -102,6 +103,7 @@ namespace KSPCapcom
 
             // Create chat panel with LLM responder and secrets
             _chatPanel = new ChatPanel(responder, _settings, _secrets);
+            _readinessPanel = new ReadinessPanel(_settings);
             _toolbarButton = new ToolbarButton(OnToolbarToggle);
 
             // Log scene changes
@@ -147,6 +149,10 @@ namespace KSPCapcom
 
             _chatPanel = null;
 
+            // Clean up readiness panel subscriptions
+            _readinessPanel?.Cleanup();
+            _readinessPanel = null;
+
             // EditorCraftMonitor is a component on this GameObject,
             // so it will be destroyed automatically when this is destroyed.
             _editorMonitor = null;
@@ -161,6 +167,18 @@ namespace KSPCapcom
         {
             // Render the chat panel if visible
             _chatPanel?.OnGUI();
+
+            // Render the readiness panel if visible
+            _readinessPanel?.OnGUI();
+        }
+
+        private void Update()
+        {
+            // Alt+R keyboard shortcut for readiness panel
+            if (Input.GetKey(KeyCode.LeftAlt) && Input.GetKeyDown(KeyCode.R))
+            {
+                _readinessPanel?.Toggle();
+            }
         }
 
         /// <summary>

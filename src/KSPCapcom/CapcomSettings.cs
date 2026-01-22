@@ -114,5 +114,11 @@ namespace KSPCapcom
             IsEndpointValid = true;
             EndpointValidationError = "";
         }
+
+        /// <summary>
+        /// Whether the readiness panel is visible.
+        /// In-memory only - no persistence in M1.
+        /// </summary>
+        public bool ReadinessPanelVisible { get; set; } = false;
     }
 }
