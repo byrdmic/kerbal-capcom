@@ -10,6 +10,9 @@ namespace KSPCapcom.LLM.OpenAI
     /// </summary>
     public class StreamingDownloadHandler : DownloadHandlerScript
     {
+        // Buffer size for receiving streaming data from Unity
+        private const int BUFFER_SIZE = 4096;
+
         private readonly Action<string> _onChunk;
         private readonly StringBuilder _buffer;
         private readonly StringBuilder _completeResponse;
@@ -30,7 +33,12 @@ namespace KSPCapcom.LLM.OpenAI
         /// Create a new streaming download handler.
         /// </summary>
         /// <param name="onChunk">Callback invoked for each content chunk received.</param>
-        public StreamingDownloadHandler(Action<string> onChunk)
+        /// <remarks>
+        /// The base class DownloadHandlerScript MUST be initialized with a pre-allocated buffer.
+        /// Without this, Unity has no memory to write incoming data into, and ReceiveData() will
+        /// never be called (or called with empty data), resulting in zero chunks being processed.
+        /// </remarks>
+        public StreamingDownloadHandler(Action<string> onChunk) : base(new byte[BUFFER_SIZE])
         {
             _onChunk = onChunk ?? throw new ArgumentNullException(nameof(onChunk));
             _buffer = new StringBuilder();
@@ -44,6 +52,9 @@ namespace KSPCapcom.LLM.OpenAI
         /// </summary>
         protected override bool ReceiveData(byte[] data, int dataLength)
         {
+            // Debug: confirm ReceiveData is being called
+            CapcomCore.Log($"StreamingDownloadHandler.ReceiveData: {dataLength} bytes");
+
             if (data == null || dataLength == 0)
                 return true;
 
@@ -116,6 +127,10 @@ namespace KSPCapcom.LLM.OpenAI
         private void ProcessBuffer()
         {
             string bufferContent = _buffer.ToString();
+
+            // Normalize line endings: \r\n -> \n (handles Windows/HTTP line endings)
+            bufferContent = bufferContent.Replace("\r\n", "\n");
+
             int lastProcessed = 0;
 
             while (true)
@@ -136,10 +151,11 @@ namespace KSPCapcom.LLM.OpenAI
                     break;
             }
 
-            // Remove processed content from buffer
-            if (lastProcessed > 0)
+            // Update buffer with normalized content minus processed portion
+            _buffer.Clear();
+            if (lastProcessed < bufferContent.Length)
             {
-                _buffer.Remove(0, lastProcessed);
+                _buffer.Append(bufferContent.Substring(lastProcessed));
             }
         }
 
@@ -148,6 +164,9 @@ namespace KSPCapcom.LLM.OpenAI
         /// </summary>
         private void ProcessEvent(string eventText)
         {
+            // Debug: log full event (not truncated) to diagnose content extraction
+            CapcomCore.Log($"SSE event (full): {eventText}");
+
             // SSE format: "data: {...}"
             if (!eventText.StartsWith("data: "))
                 return;
@@ -175,6 +194,12 @@ namespace KSPCapcom.LLM.OpenAI
                     // Notify callback with accumulated text
                     _onChunk?.Invoke(_completeResponse.ToString());
                 }
+
+                // Check for finish_reason: "length" with no content - indicates token limit hit
+                if (dataContent.Contains("\"finish_reason\":\"length\"") && _completeResponse.Length == 0)
+                {
+                    CapcomCore.LogWarning("API returned finish_reason='length' with no content - max_tokens may be too low or account has output limits");
+                }
             }
             catch (Exception ex)
             {
@@ -188,15 +213,22 @@ namespace KSPCapcom.LLM.OpenAI
         /// </summary>
         private string ExtractDeltaContent(string json)
         {
+            // Debug: log full input JSON
+            CapcomCore.Log($"ExtractDeltaContent input: {json}");
+
             // Find the choices array
             var choicesJson = JsonParser.ExtractArrayValue(json, "choices");
+            CapcomCore.Log($"ExtractDeltaContent choices: {choicesJson ?? "(null)"}");
             if (string.IsNullOrEmpty(choicesJson))
                 return null;
 
             // Find the first choice object
             int objectStart = choicesJson.IndexOf('{');
             if (objectStart < 0)
+            {
+                CapcomCore.Log("ExtractDeltaContent: no '{' found in choices");
                 return null;
+            }
 
             // Find matching closing brace for first object
             int depth = 0;
@@ -222,17 +254,24 @@ namespace KSPCapcom.LLM.OpenAI
             }
 
             if (objectEnd < 0)
+            {
+                CapcomCore.Log("ExtractDeltaContent: no matching '}' found");
                 return null;
+            }
 
             string choiceJson = choicesJson.Substring(objectStart, objectEnd - objectStart + 1);
+            CapcomCore.Log($"ExtractDeltaContent choiceJson: {choiceJson}");
 
             // Extract delta object
             var deltaJson = JsonParser.ExtractObjectValue(choiceJson, "delta");
+            CapcomCore.Log($"ExtractDeltaContent delta: {deltaJson ?? "(null)"}");
             if (string.IsNullOrEmpty(deltaJson))
                 return null;
 
             // Extract content from delta
-            return JsonParser.ExtractStringValue(deltaJson, "content");
+            var content = JsonParser.ExtractStringValue(deltaJson, "content");
+            CapcomCore.Log($"ExtractDeltaContent content: '{content ?? "(null)"}'");
+            return content;
         }
 
         /// <summary>

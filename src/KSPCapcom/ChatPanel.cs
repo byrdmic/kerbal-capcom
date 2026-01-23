@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using UnityEngine;
+using KSPCapcom.Critique;
+using KSPCapcom.Editor;
 using KSPCapcom.Responders;
 
 namespace KSPCapcom
@@ -52,6 +54,9 @@ namespace KSPCapcom
         private readonly MessageQueue _messageQueue;
         private CancellationTokenSource _currentRequestCts;
 
+        // Critique service
+        private CritiqueService _critiqueService;
+
         // Styles
         private GUIStyle _windowStyle;
         private GUIStyle _messageStyle;
@@ -78,6 +83,7 @@ namespace KSPCapcom
         private GUIStyle _cancelButtonStyle;
         private GUIStyle _queueCountStyle;
         private GUIStyle _queuedMessageStyle;
+        private GUIStyle _critiqueButtonStyle;
 
         // Auto-scroll management
         private bool _shouldAutoScroll = true;
@@ -137,9 +143,159 @@ namespace KSPCapcom
         }
 
         /// <summary>
+        /// Set the critique service for design critique functionality.
+        /// </summary>
+        public void SetCritiqueService(CritiqueService critiqueService)
+        {
+            _critiqueService = critiqueService;
+        }
+
+        /// <summary>
         /// Whether a response is currently being generated or pending messages are queued.
         /// </summary>
         private bool IsWaitingForResponse => _pendingMessage != null || _responder.IsBusy;
+
+        /// <summary>
+        /// Whether the critique button should be enabled.
+        /// Requires: in editor, have critique service, have valid craft, not busy.
+        /// </summary>
+        private bool CanCritique()
+        {
+            // Must have critique service configured
+            if (_critiqueService == null)
+            {
+                return false;
+            }
+
+            // Can't critique while busy
+            if (IsWaitingForResponse)
+            {
+                return false;
+            }
+
+            // Must be in editor scene
+            if (!HighLogic.LoadedSceneIsEditor)
+            {
+                return false;
+            }
+
+            // Must have a valid craft
+            var monitor = EditorCraftMonitor.Instance;
+            if (monitor == null)
+            {
+                return false;
+            }
+
+            var snapshot = monitor.CurrentSnapshot;
+            var validation = _critiqueService.ValidateCraft(snapshot);
+            return validation.IsValid;
+        }
+
+        /// <summary>
+        /// Get the current craft snapshot from the editor monitor.
+        /// </summary>
+        private EditorCraftSnapshot GetCurrentSnapshot()
+        {
+            var monitor = EditorCraftMonitor.Instance;
+            return monitor?.CurrentSnapshot ?? EditorCraftSnapshot.Empty;
+        }
+
+        /// <summary>
+        /// Handle click on the Critique button.
+        /// </summary>
+        private void OnCritiqueClick()
+        {
+            if (_critiqueService == null || IsWaitingForResponse)
+            {
+                return;
+            }
+
+            // Force refresh to get latest state
+            var monitor = EditorCraftMonitor.Instance;
+            monitor?.ForceRefresh();
+
+            var snapshot = GetCurrentSnapshot();
+
+            // Validate before proceeding
+            var validation = _critiqueService.ValidateCraft(snapshot);
+            if (!validation.IsValid)
+            {
+                AddSystemMessage($"<color=#ffaa00>{validation.Reason}</color>");
+                return;
+            }
+
+            // Add a synthetic user message to show in chat
+            var userMessage = ChatMessage.FromUser($"[Critique: {snapshot.CraftName}]");
+            _messages.Add(userMessage);
+            TrimMessageHistory();
+            ScrollToBottom();
+            CapcomCore.Log($"[User] Critique requested for {snapshot.CraftName}");
+
+            // Add pending message for visual feedback
+            _pendingMessage = ChatMessage.FromAssistantPending("Analyzing craft design...");
+            _messages.Add(_pendingMessage);
+            ScrollToBottom();
+
+            // Create cancellation token
+            _currentRequestCts = new CancellationTokenSource();
+
+            // Request critique
+            _critiqueService.RequestCritique(
+                snapshot,
+                _currentRequestCts.Token,
+                OnCritiqueComplete,
+                OnStreamChunk
+            );
+        }
+
+        /// <summary>
+        /// Callback when critique response is ready.
+        /// </summary>
+        private void OnCritiqueComplete(ResponderResult result)
+        {
+            // Complete the pending message
+            if (_pendingMessage != null)
+            {
+                if (result.Success)
+                {
+                    bool hasStreamedContent = !string.IsNullOrEmpty(_pendingMessage.Text)
+                        && _pendingMessage.Text != "Analyzing craft design...";
+                    bool hasFinalContent = !string.IsNullOrEmpty(result.Text);
+
+                    if (hasStreamedContent)
+                    {
+                        _pendingMessage.Complete();
+                    }
+                    else if (hasFinalContent)
+                    {
+                        _pendingMessage.Complete(result.Text);
+                    }
+                    else
+                    {
+                        // Request succeeded but no content - show error instead of blank
+                        _messages.Remove(_pendingMessage);
+                        AddSystemMessage("<color=#ffaa00>Critique completed but response was empty. Please try again.</color>");
+                        CapcomCore.LogWarning("Critique: Request succeeded but received empty response");
+                    }
+                    CapcomCore.Log($"[Assistant] Critique complete");
+                }
+                else
+                {
+                    // Replace pending with error
+                    _messages.Remove(_pendingMessage);
+                    var errorColor = GetErrorColor(result.ErrorMessage);
+                    AddSystemMessage($"<color={errorColor}>Error: {result.ErrorMessage}</color>");
+                    CapcomCore.LogError($"Critique error: {result.ErrorMessage}");
+                }
+                _pendingMessage = null;
+            }
+
+            // Cleanup
+            _currentRequestCts?.Dispose();
+            _currentRequestCts = null;
+
+            ScrollToBottom();
+        }
 
         /// <summary>
         /// Toggle the panel visibility.
@@ -292,6 +448,11 @@ namespace KSPCapcom
             // Queued message style (dimmed)
             _queuedMessageStyle = new GUIStyle(_userMessageStyle);
             _queuedMessageStyle.normal.textColor = new Color(0.7f, 0.7f, 0.7f);
+
+            // Critique button style (distinct color to indicate special action)
+            _critiqueButtonStyle = new GUIStyle(HighLogic.Skin.button);
+            _critiqueButtonStyle.normal.textColor = new Color(0.4f, 0.8f, 1.0f);
+            _critiqueButtonStyle.hover.textColor = new Color(0.6f, 0.9f, 1.0f);
 
             _stylesInitialized = true;
         }
@@ -660,6 +821,15 @@ namespace KSPCapcom
             _inputText = GUILayout.TextArea(_inputText, _inputStyle,
                 GUILayout.ExpandWidth(true),
                 GUILayout.Height(inputHeight));
+
+            // Critique button - only shown/enabled in editor with valid craft
+            bool canCritique = CanCritique();
+            GUI.enabled = canCritique;
+            if (GUILayout.Button("Critique", _critiqueButtonStyle, GUILayout.Width(60), GUILayout.Height(inputHeight)))
+            {
+                OnCritiqueClick();
+            }
+            GUI.enabled = true;
 
             // Send/Stop button - contextual based on state
             if (IsWaitingForResponse)

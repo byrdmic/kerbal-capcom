@@ -1,6 +1,7 @@
 using System;
 using System.Reflection;
 using UnityEngine;
+using KSPCapcom.Critique;
 using KSPCapcom.Editor;
 using KSPCapcom.LLM;
 using KSPCapcom.LLM.OpenAI;
@@ -105,6 +106,10 @@ namespace KSPCapcom
             _chatPanel = new ChatPanel(responder, _settings, _secrets);
             _readinessPanel = new ReadinessPanel(_settings);
             _toolbarButton = new ToolbarButton(OnToolbarToggle);
+
+            // Create critique service (uses same connector as chat)
+            var critiqueService = new CritiqueService(connector);
+            _chatPanel.SetCritiqueService(critiqueService);
 
             // Log scene changes
             GameScenes currentScene = HighLogic.LoadedScene;

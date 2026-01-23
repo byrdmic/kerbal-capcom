@@ -185,6 +185,9 @@ namespace KSPCapcom.LLM.OpenAI
                 var jsonContent = request.ToJson();
                 var jsonBytes = Encoding.UTF8.GetBytes(jsonContent);
 
+                // Debug: log outgoing request (redact actual content for privacy)
+                CapcomCore.Log($"Streaming request - model={request.Model}, max_tokens={request.MaxTokens}, temp={request.Temperature}");
+
                 // Create UnityWebRequest with streaming handler
                 using (var webRequest = new UnityWebRequest(OPENAI_ENDPOINT, "POST"))
                 {
@@ -310,6 +313,9 @@ namespace KSPCapcom.LLM.OpenAI
 
         private LLMResponse ParseErrorResponse(int statusCode, string responseBody, UnityWebRequest webRequest)
         {
+            // Log raw error response for diagnostics
+            CapcomCore.Log($"OpenAI error response (status {statusCode}): {responseBody}");
+
             // Try to parse error details
             string errorMessage = null;
             string errorCode = null;

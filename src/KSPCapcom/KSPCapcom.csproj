@@ -72,6 +72,8 @@
     <Compile Include="CapcomCore.cs" />
     <Compile Include="CapcomSettings.cs" />
     <Compile Include="ChatPanel.cs" />
+    <Compile Include="Critique\CritiquePromptBuilder.cs" />
+    <Compile Include="Critique\CritiqueService.cs" />
     <Compile Include="ReadinessPanel.cs" />
     <Compile Include="Editor\EditorCraftMonitor.cs" />
     <Compile Include="Editor\EditorCraftSnapshot.cs" />
