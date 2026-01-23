@@ -46,7 +46,7 @@ namespace KSPCapcom
             _currentMetrics = ReadinessMetrics.NotAvailable;
 
             InitializeWindowRect();
-            SubscribeToMonitor();
+            // Subscription will be called by CapcomCore after monitor is ready
 
             CapcomCore.Log("ReadinessPanel initialized");
         }
@@ -61,14 +61,20 @@ namespace KSPCapcom
             _windowRect = new Rect(x, y, DEFAULT_WIDTH, DEFAULT_HEIGHT);
         }
 
-        private void SubscribeToMonitor()
+        /// <summary>
+        /// Subscribe to EditorCraftMonitor updates. Safe to call multiple times.
+        /// </summary>
+        public void SubscribeToMonitor()
         {
-            if (EditorCraftMonitor.Instance != null)
+            // Guard: already subscribed or monitor not available yet
+            if (_isSubscribed || EditorCraftMonitor.Instance == null)
             {
-                EditorCraftMonitor.Instance.OnSnapshotReady += OnSnapshotUpdated;
-                _isSubscribed = true;
-                CapcomCore.Log("ReadinessPanel subscribed to EditorCraftMonitor");
+                return;
             }
+
+            EditorCraftMonitor.Instance.OnSnapshotReady += OnSnapshotUpdated;
+            _isSubscribed = true;
+            CapcomCore.Log("ReadinessPanel subscribed to EditorCraftMonitor");
         }
 
         private void OnSnapshotUpdated(EditorCraftSnapshot snapshot)
@@ -136,6 +142,12 @@ namespace KSPCapcom
             if (!_isVisible)
             {
                 return;
+            }
+
+            // Defensive: Retry subscription if we're in editor and monitor is now available
+            if (!_isSubscribed && HighLogic.LoadedSceneIsEditor && EditorCraftMonitor.Instance != null)
+            {
+                SubscribeToMonitor();
             }
 
             InitializeStyles();

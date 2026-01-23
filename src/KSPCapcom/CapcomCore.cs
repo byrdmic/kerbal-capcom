@@ -137,6 +137,9 @@ namespace KSPCapcom
 
             _editorMonitor = gameObject.AddComponent<EditorCraftMonitor>();
             Log("EditorCraftMonitor initialized");
+
+            // Subscribe ReadinessPanel now that monitor is available
+            _readinessPanel?.SubscribeToMonitor();
         }
 
         private void OnDestroy()

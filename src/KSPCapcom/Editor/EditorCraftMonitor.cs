@@ -34,6 +34,11 @@ namespace KSPCapcom.Editor
         private bool _isDirty;
         private float _lastModificationTime;
 
+        // Initial capture state tracking
+        private bool _initialCaptureDone;
+        private float _startTime;
+        private const float INITIAL_CAPTURE_TIMEOUT = 2.0f;
+
         private void Awake()
         {
             if (_instance != null && _instance != this)
@@ -53,10 +58,11 @@ namespace KSPCapcom.Editor
             GameEvents.onEditorShipModified.Add(OnShipModified);
             GameEvents.onEditorPartEvent.Add(OnPartEvent);
 
-            CapcomCore.Log("EditorCraftMonitor: Started and subscribed to GameEvents");
+            // Initialize state for initial capture retry
+            _startTime = Time.time;
+            _initialCaptureDone = false;
 
-            // Capture initial snapshot if a craft already exists
-            CaptureSnapshotNow();
+            CapcomCore.Log("EditorCraftMonitor: Started and subscribed to GameEvents, waiting for craft to become available");
         }
 
         private void OnDestroy()
@@ -75,6 +81,27 @@ namespace KSPCapcom.Editor
 
         private void Update()
         {
+            // Initial capture retry logic (waits for craft to become available)
+            if (!_initialCaptureDone)
+            {
+                if (Time.time - _startTime < INITIAL_CAPTURE_TIMEOUT)
+                {
+                    // Check if craft is available
+                    if (EditorLogic.fetch?.ship?.Parts?.Count > 0)
+                    {
+                        _initialCaptureDone = true;
+                        CaptureSnapshotNow();
+                        CapcomCore.Log("EditorCraftMonitor: Initial craft detected and captured");
+                    }
+                }
+                else
+                {
+                    // Timeout expired - editor started with no craft
+                    _initialCaptureDone = true;
+                    CapcomCore.Log("EditorCraftMonitor: Initial capture timeout (no craft loaded)");
+                }
+            }
+
             // Check if we need to rebuild the snapshot (debounce elapsed)
             if (_isDirty && Time.time - _lastModificationTime >= DEBOUNCE_SECONDS)
             {
