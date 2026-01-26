@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DockingPort &mdash; kOS 1.4.0.0 documentation</title>
+      <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/css/kos_theme.css" type="text/css" />
+    <link rel="shortcut icon" href="../../_static/favicon.ico"/>
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../_static/doctools.js"></script>
+        <script src="../../_static/sphinx_highlight.js"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="author" title="About these documents" href="../../about.html" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="copyright" title="Copyright" href="../../copyright.html" />
+    <link rel="next" title="Element" href="element.html" />
+    <link rel="prev" title="DeltaV" href="deltav.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../contents.html" class="icon icon-home"> kOS
+            <img src="../../_static/kos_logo_small.png" class="logo" alt="Logo"/>
+          </a>
+              <div class="version">
+                1.4.0.0
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../index.html">Home</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../contents.html">Table of Contents</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../downloads_links.html">Downloads and Links</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../tutorials.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../library.html">Community Example Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../general.html">General</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../language.html">Language</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../math.html">Mathematics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../commands.html">Commands</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../structures.html">Structures</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../reflection.html">Generic Structure</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../collections.html">Collections</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../volumes_and_files.html">Volumes &amp; Files</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../vessels.html">Vessels &amp; Parts</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="aggregateresource.html">AggregateResource</a></li>
+<li class="toctree-l3"><a class="reference internal" href="alt.html">ALT</a></li>
+<li class="toctree-l3"><a class="reference internal" href="bounds.html">BOUNDS</a></li>
+<li class="toctree-l3"><a class="reference internal" href="consumedresource.html">ConsumedResource</a></li>
+<li class="toctree-l3"><a class="reference internal" href="consumedresourcercs.html">ConsumedResourceRCS</a></li>
+<li class="toctree-l3"><a class="reference internal" href="core.html">Core</a></li>
+<li class="toctree-l3"><a class="reference internal" href="crafttemplate.html">CraftTemplate</a></li>
+<li class="toctree-l3"><a class="reference internal" href="crewmember.html">CrewMember</a></li>
+<li class="toctree-l3"><a class="reference internal" href="decoupler.html">Decoupler</a></li>
+<li class="toctree-l3"><a class="reference internal" href="deltav.html">DeltaV</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">DockingPort</a></li>
+<li class="toctree-l3"><a class="reference internal" href="element.html">Element</a></li>
+<li class="toctree-l3"><a class="reference internal" href="engine.html">Engine</a></li>
+<li class="toctree-l3"><a class="reference internal" href="gimbal.html">Gimbal</a></li>
+<li class="toctree-l3"><a class="reference internal" href="kosprocessor.html">kOSProcessor</a></li>
+<li class="toctree-l3"><a class="reference internal" href="launchclamp.html">LaunchClamp</a></li>
+<li class="toctree-l3"><a class="reference internal" href="node.html">Maneuver Node</a></li>
+<li class="toctree-l3"><a class="reference internal" href="part.html">Part</a></li>
+<li class="toctree-l3"><a class="reference internal" href="partmodule.html">PartModule</a></li>
+<li class="toctree-l3"><a class="reference internal" href="rcs.html">RCS</a></li>
+<li class="toctree-l3"><a class="reference internal" href="resource.html">Resource</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sciencecontainermodule.html">ScienceContainerModule</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sciencedatavalue.html">ScienceData</a></li>
+<li class="toctree-l3"><a class="reference internal" href="scienceexperiment.html">ScienceExperimentModule</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sensor.html">Sensor</a></li>
+<li class="toctree-l3"><a class="reference internal" href="separator.html">Separator</a></li>
+<li class="toctree-l3"><a class="reference internal" href="stage.html">Stage</a></li>
+<li class="toctree-l3"><a class="reference internal" href="vessel.html">Vessel</a></li>
+<li class="toctree-l3"><a class="reference internal" href="vesselsensors.html">VesselSensors</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../communication.html">Communication</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../orbits.html">Orbits</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../celestial_bodies.html">Celestial Bodies</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../gui.html">GUI Widgets</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../misc.html">Miscellaneous</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../waypoint.html">Waypoints</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../addons.html">Addons</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../contribute.html">Contribute</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../getting_help.html">Getting Help</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../changes.html">Changes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../about.html">About</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../contents.html">kOS</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../contents.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../../structures.html">Structure Reference</a> &raquo;</li>
+          <li><a href="../vessels.html">Vessels and Parts</a> &raquo;</li>
+      <li>DockingPort</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/structures/vessels/dockingport.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="dockingport">
+<span id="id1"></span><h1>DockingPort<a class="headerlink" href="#dockingport" title="Permalink to this heading">¶</a></h1>
+<p>Some of the Parts returned by <a class="reference internal" href="../../commands/list.html#list-command"><span class="std std-ref">LIST PARTS</span></a> will be of type <a class="reference internal" href="#structure:DOCKINGPORT" title="DOCKINGPORT structure"><code class="xref ks ks-struct docutils literal notranslate"><span class="pre">DockingPort</span></code></a>.
+Such part can also be retrieved from <a class="reference internal" href="../../commands/flight/systems.html#global:TARGET" title="TARGET global"><code class="xref ks ks-global docutils literal notranslate"><span class="pre">TARGET</span></code></a>, if docking port is selected as target.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<div class="versionadded">
+<p><span class="versionmodified added">New in version 0.18: </span>The spelling of suffixes <cite>AQUIRERANGE</cite>, <cite>AQUIREFORCE</cite>, and <cite>AQUIRETORQUE</cite> on the <a class="reference internal" href="#structure:DOCKINGPORT" title="DOCKINGPORT structure"><code class="xref ks ks-struct docutils literal notranslate"><span class="pre">DockingPort</span></code></a> structure has been corrected.  Please use <cite>ACQUIRERANGE</cite>, <cite>ACQUIREFORCE</cite>, and <cite>ACQUIRETORQURE</cite> instead.  Using the old incorrect spelling, a deprecation exception will be thrown, with instruction to use the new spelling.</p>
+</div>
+</div>
+<dl class="ks structure">
+<dt class="sig sig-object ks" id="structure:DOCKINGPORT">
+<em class="property"><span class="pre">structure</span> </em><span class="sig-name descname"><span class="pre">DockingPort</span></span><a class="headerlink" href="#structure:DOCKINGPORT" title="Permalink to this definition">¶</a></dt>
+<dd><table class="colwidths-given docutils align-default">
+<colgroup>
+<col style="width: 29%" />
+<col style="width: 14%" />
+<col style="width: 57%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Suffix</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>All suffixes of <a class="reference internal" href="decoupler.html#structure:DECOUPLER" title="DECOUPLER structure"><code class="xref ks ks-struct docutils literal notranslate"><span class="pre">Decoupler</span></code></a></p></td>
+<td></td>
+<td><p>A <a class="reference internal" href="#structure:DOCKINGPORT" title="DOCKINGPORT structure"><code class="xref ks ks-struct docutils literal notranslate"><span class="pre">DockingPort</span></code></a> is a kind of <a class="reference internal" href="decoupler.html#structure:DECOUPLER" title="DECOUPLER structure"><code class="xref ks ks-struct docutils literal notranslate"><span class="pre">Decoupler</span></code></a> (which is <a class="reference internal" href="part.html#structure:PART" title="PART structure"><code class="xref ks ks-struct docutils literal notranslate"><span class="pre">Part</span></code></a>)</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#attribute:DOCKINGPORT:ACQUIRERANGE" title="DOCKINGPORT:ACQUIRERANGE attribute"><code class="xref ks ks-attr docutils literal notranslate"><span class="pre">ACQUIRERANGE</span></code></a></p></td>
+<td><p><a class="reference internal" href="../../math/scalar.html#structure:SCALAR" title="SCALAR structure"><code class="xref ks ks-struct docutils literal notranslate"><span class="pre">Scalar</span></code></a></p></td>
+<td><p>active range of the port</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#attribute:DOCKINGPORT:ACQUIREFORCE" title="DOCKINGPORT:ACQUIREFORCE attribute"><code class="xref ks ks-attr docutils literal notranslate"><span class="pre">ACQUIREFORCE</span></code></a></p></td>
+<td><p><a class="reference internal" href="../../math/scalar.html#structure:SCALAR" title="SCALAR structure"><code class="xref ks ks-struct docutils literal notranslate"><span class="pre">Scalar</span></code></a></p></td>
+<td><p>force experienced when docking</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#attribute:DOCKINGPORT:ACQUIRETORQUE" title="DOCKINGPORT:ACQUIRETORQUE attribute"><code class="xref ks ks-attr docutils literal notranslate"><span class="pre">ACQUIRETORQUE</span></code></a></p></td>
+<td><p><a class="reference internal" href="../../math/scalar.html#structure:SCALAR" title="SCALAR structure"><code class="xref ks ks-struct docutils literal notranslate"><span class="pre">Scalar</span></code></a></p></td>
+<td><p>torque experienced when docking</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#attribute:DOCKINGPORT:REENGAGEDDISTANCE" title="DOCKINGPORT:REENGAGEDDISTANCE attribute"><code class="xref ks ks-attr docutils literal notranslate"><span class="pre">REENGAGEDDISTANCE</span></code></a></p></td>
+<td><p><a class="reference internal" href="../../math/scalar.html#structure:SCALAR" title="SCALAR structure"><code class="xref ks ks-struct docutils literal notranslate"><span class="pre">Scalar</span></code></a></p></td>
+<td><p>distance at which the port is reset</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#attribute:DOCKINGPORT:DOCKEDSHIPNAME" title="DOCKINGPORT:DOCKEDSHIPNAME attribute"><code class="xref ks ks-attr docutils literal notranslate"><span class="pre">DOCKEDSHIPNAME</span></code></a></p></td>
+<td><p><a class="reference internal" href="../misc/string.html#structure:STRING" title="STRING structure"><code class="xref ks ks-struct docutils literal notranslate"><span class="pre">String</span></code></a></p></td>
+<td><p>name of vessel the port is docked to</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#attribute:DOCKINGPORT:NODEPOSITION" title="DOCKINGPORT:NODEPOSITION attribute"><code class="xref ks ks-attr docutils literal notranslate"><span class="pre">NODEPOSITION</span></code></a></p></td>
+<td><p><a class="reference internal" href="../../math/vector.html#structure:VECTOR" title="VECTOR structure"><code class="xref ks ks-struct docutils literal notranslate"><span class="pre">Vector</span></code></a></p></td>
+<td><p>coords of where the docking node attachment point is in SHIP-RAW xyz</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#attribute:DOCKINGPORT:NODETYPE" title="DOCKINGPORT:NODETYPE attribute"><code class="xref ks ks-attr docutils literal notranslate"><span class="pre">NODETYPE</span></code></a></p></td>
+<td><p><a class="reference internal" href="../misc/string.html#structure:STRING" title="STRING structure"><code class="xref ks ks-struct docutils literal notranslate"><span class="pre">String</span></code></a></p></td>
+<td><p>two nodes are only dockable together if their NODETYPE strings match</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#attribute:DOCKINGPORT:PORTFACING" title="DOCKINGPORT:PORTFACING attribute"><code class="xref ks ks-attr docutils literal notranslate"><span class="pre">PORTFACING</span></code></a></p></td>
+<td><p><a class="reference internal" href="../../math/direction.html#structure:DIRECTION" title="DIRECTION structure"><code class="xref ks ks-struct docutils literal notranslate"><span class="pre">Direction</span></code></a></p></td>
+<td><p>facing of the port</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#attribute:DOCKINGPORT:STATE" title="DOCKINGPORT:STATE attribute"><code class="xref ks ks-attr docutils literal notranslate"><span class="pre">STATE</span></code></a></p></td>
+<td><p><a class="reference internal" href="../misc/string.html#structure:STRING" title="STRING structure"><code class="xref ks ks-struct docutils literal notranslate"><span class="pre">String</span></code></a></p></td>
+<td><p>current state of the port</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#method:DOCKINGPORT:UNDOCK" title="DOCKINGPORT:UNDOCK method"><code class="xref ks ks-meth docutils literal notranslate"><span class="pre">UNDOCK</span></code></a></p></td>
+<td></td>
+<td><p>callable to release the dock</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#attribute:DOCKINGPORT:PARTNER" title="DOCKINGPORT:PARTNER attribute"><code class="xref ks ks-attr docutils literal notranslate"><span class="pre">PARTNER</span></code></a></p></td>
+<td><p><a class="reference internal" href="#structure:DOCKINGPORT" title="DOCKINGPORT structure"><code class="xref ks ks-struct docutils literal notranslate"><span class="pre">DockingPort</span></code></a></p></td>
+<td><p>the docking port this docking port is attached to, or “None” if no such port</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#attribute:DOCKINGPORT:HASPARTNER" title="DOCKINGPORT:HASPARTNER attribute"><code class="xref ks ks-attr docutils literal notranslate"><span class="pre">HASPARTNER</span></code></a></p></td>
+<td><p><a class="reference internal" href="../misc/boolean.html#structure:BOOLEAN" title="BOOLEAN structure"><code class="xref ks ks-struct docutils literal notranslate"><span class="pre">Boolean</span></code></a></p></td>
+<td><p>whether or not this docking port is attached to another docking port</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#attribute:DOCKINGPORT:TARGETABLE" title="DOCKINGPORT:TARGETABLE attribute"><code class="xref ks ks-attr docutils literal notranslate"><span class="pre">TARGETABLE</span></code></a></p></td>
+<td><p><a class="reference internal" href="../misc/boolean.html#structure:BOOLEAN" title="BOOLEAN structure"><code class="xref ks ks-struct docutils literal notranslate"><span class="pre">Boolean</span></code></a></p></td>
+<td><p>check if this port can be targeted</p></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><a class="reference internal" href="#structure:DOCKINGPORT" title="DOCKINGPORT structure"><code class="xref ks ks-struct docutils literal notranslate"><span class="pre">DockingPort</span></code></a> is a type of <a class="reference internal" href="decoupler.html#structure:DECOUPLER" title="DECOUPLER structure"><code class="xref ks ks-struct docutils literal notranslate"><span class="pre">Decoupler</span></code></a>, and therefore can use all the suffixes of <a class="reference internal" href="decoupler.html#structure:DECOUPLER" title="DECOUPLER structure"><code class="xref ks ks-struct docutils literal notranslate"><span class="pre">Decoupler</span></code></a>. Shown below are only the suffixes that are unique to <a class="reference internal" href="#structure:DOCKINGPORT" title="DOCKINGPORT structure"><code class="xref ks ks-struct docutils literal notranslate"><span class="pre">DockingPort</span></code></a>.</p>
+</div>
+<dl class="ks attribute">
+<dt class="sig sig-object ks" id="attribute:DOCKINGPORT:ACQUIRERANGE">
+<span class="pre">DockingPort:</span><span class="sig-name descname"><span class="pre">ACQUIRERANGE</span></span><a class="headerlink" href="#attribute:DOCKINGPORT:ACQUIRERANGE" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>scalar</p>
+</dd>
+<dt class="field-even">Access</dt>
+<dd class="field-even"><p>Get only</p>
+</dd>
+</dl>
+<p>gets the range at which the port will “notice” another port and pull on it.</p>
+</dd></dl>
+
+<dl class="ks attribute">
+<dt class="sig sig-object ks" id="attribute:DOCKINGPORT:ACQUIREFORCE">
+<span class="pre">DockingPort:</span><span class="sig-name descname"><span class="pre">ACQUIREFORCE</span></span><a class="headerlink" href="#attribute:DOCKINGPORT:ACQUIREFORCE" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>scalar</p>
+</dd>
+<dt class="field-even">Access</dt>
+<dd class="field-even"><p>Get only</p>
+</dd>
+</dl>
+<p>gets the force with which the port pulls on another port.</p>
+</dd></dl>
+
+<dl class="ks attribute">
+<dt class="sig sig-object ks" id="attribute:DOCKINGPORT:ACQUIRETORQUE">
+<span class="pre">DockingPort:</span><span class="sig-name descname"><span class="pre">ACQUIRETORQUE</span></span><a class="headerlink" href="#attribute:DOCKINGPORT:ACQUIRETORQUE" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>scalar</p>
+</dd>
+<dt class="field-even">Access</dt>
+<dd class="field-even"><p>Get only</p>
+</dd>
+</dl>
+<p>gets the rotational force with which the port pulls on another port.</p>
+</dd></dl>
+
+<dl class="ks attribute">
+<dt class="sig sig-object ks" id="attribute:DOCKINGPORT:REENGAGEDDISTANCE">
+<span class="pre">DockingPort:</span><span class="sig-name descname"><span class="pre">REENGAGEDDISTANCE</span></span><a class="headerlink" href="#attribute:DOCKINGPORT:REENGAGEDDISTANCE" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>scalar</p>
+</dd>
+<dt class="field-even">Access</dt>
+<dd class="field-even"><p>Get only</p>
+</dd>
+</dl>
+<p>how far the port has to get away after undocking in order to re-enable docking.</p>
+</dd></dl>
+
+<dl class="ks attribute">
+<dt class="sig sig-object ks" id="attribute:DOCKINGPORT:DOCKEDSHIPNAME">
+<span class="pre">DockingPort:</span><span class="sig-name descname"><span class="pre">DOCKEDSHIPNAME</span></span><a class="headerlink" href="#attribute:DOCKINGPORT:DOCKEDSHIPNAME" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="../misc/string.html#structure:STRING" title="STRING structure"><code class="xref ks ks-struct docutils literal notranslate"><span class="pre">String</span></code></a></p>
+</dd>
+<dt class="field-even">Access</dt>
+<dd class="field-even"><p>Get only</p>
+</dd>
+</dl>
+<p>name of vessel on the other side of the docking port.</p>
+</dd></dl>
+
+<dl class="ks attribute">
+<dt class="sig sig-object ks" id="attribute:DOCKINGPORT:NODEPOSITION">
+<span class="pre">DockingPort:</span><span class="sig-name descname"><span class="pre">NODEPOSITION</span></span><a class="headerlink" href="#attribute:DOCKINGPORT:NODEPOSITION" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>vector</p>
+</dd>
+<dt class="field-even">Access</dt>
+<dd class="field-even"><p>Get only</p>
+</dd>
+</dl>
+<p>The coordinates of the point on the docking port part where the
+port attachment spot is located.  This is different from the
+part’s position itself because that’s the position of the center
+of the whole part.  This is the position of the face of the
+docking port.  Coordinates are in SHIP-RAW xyz coords.</p>
+</dd></dl>
+
+<dl class="ks attribute">
+<dt class="sig sig-object ks" id="attribute:DOCKINGPORT:NODETYPE">
+<span class="pre">DockingPort:</span><span class="sig-name descname"><span class="pre">NODETYPE</span></span><a class="headerlink" href="#attribute:DOCKINGPORT:NODETYPE" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="../misc/string.html#structure:STRING" title="STRING structure"><code class="xref ks ks-struct docutils literal notranslate"><span class="pre">String</span></code></a></p>
+</dd>
+<dt class="field-even">Access</dt>
+<dd class="field-even"><p>Get only</p>
+</dd>
+</dl>
+<p>Each docking port has a node type string that specifies its
+compatibility with other docking ports.  In order for two docking
+ports to be able to attach to each other, the values for their
+NODETYPEs must be the same.</p>
+<p>The base KSP stock docking port parts all use one of the following
+three values:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>“size0” for all Junior-sized docking ports.</p></li>
+<li><p>“size1” for all Normal-sized docking ports.</p></li>
+<li><p>“size2” for all Senior-sized docking ports.</p></li>
+</ul>
+</div></blockquote>
+<p>Mods that provide their own new kinds of docking port might use
+any other value they feel like here, but only if they are trying
+to declare that the new part isn’t supposed to be able to connect
+to stock docking ports.  Any docking port that is meant to connect
+to stock ports will have to adhere to the above scheme.</p>
+</dd></dl>
+
+<dl class="ks attribute">
+<dt class="sig sig-object ks" id="attribute:DOCKINGPORT:PORTFACING">
+<span class="pre">DockingPort:</span><span class="sig-name descname"><span class="pre">PORTFACING</span></span><a class="headerlink" href="#attribute:DOCKINGPORT:PORTFACING" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="../../math/direction.html#structure:DIRECTION" title="DIRECTION structure"><code class="xref ks ks-struct docutils literal notranslate"><span class="pre">Direction</span></code></a></p>
+</dd>
+<dt class="field-even">Access</dt>
+<dd class="field-even"><p>Get only</p>
+</dd>
+</dl>
+<p>Gets the facing of this docking port which may differ from the facing of the part itself if the docking port is aimed out the side of the part, as in the case of the inline shielded docking port.</p>
+</dd></dl>
+
+<dl class="ks attribute">
+<dt class="sig sig-object ks" id="attribute:DOCKINGPORT:STATE">
+<span class="pre">DockingPort:</span><span class="sig-name descname"><span class="pre">STATE</span></span><a class="headerlink" href="#attribute:DOCKINGPORT:STATE" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="../misc/string.html#structure:STRING" title="STRING structure"><code class="xref ks ks-struct docutils literal notranslate"><span class="pre">String</span></code></a></p>
+</dd>
+<dt class="field-even">Access</dt>
+<dd class="field-even"><p>Get only</p>
+</dd>
+</dl>
+<p>One of the following string values:</p>
+<dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">Ready</span></code></dt><dd><p>Docking port is not yet attached and will attach if it touches another.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">Docked</span> <span class="pre">(docker)</span></code></dt><dd><p>One port in the joined pair is called the docker, and has this state</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">Docked</span> <span class="pre">(dockee)</span></code></dt><dd><p>One port in the joined pair is called the dockee, and has this state</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">Docked</span> <span class="pre">(same</span> <span class="pre">vessel)</span></code></dt><dd><p>Sometimes KSP says this instead. It’s unclear what it means.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">Disabled</span></code></dt><dd><p>Docking port will refuse to dock if it bumps another docking port.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">PreAttached</span></code></dt><dd><p>Temporary state during the “wobbling” while two ports are magnetically touching but not yet docked solidly. During this state the two vessels are still tracked as separate vessels and haven’t become one yet.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="ks method">
+<dt class="sig sig-object ks" id="method:DOCKINGPORT:UNDOCK">
+<span class="pre">DockingPort:</span><span class="sig-name descname"><span class="pre">UNDOCK</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#method:DOCKINGPORT:UNDOCK" title="Permalink to this definition">¶</a></dt>
+<dd><p>Call this to cause the docking port to detach.</p>
+</dd></dl>
+
+<dl class="ks attribute">
+<dt class="sig sig-object ks" id="attribute:DOCKINGPORT:PARTNER">
+<span class="pre">DockingPort:</span><span class="sig-name descname"><span class="pre">PARTNER</span></span><a class="headerlink" href="#attribute:DOCKINGPORT:PARTNER" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#structure:DOCKINGPORT" title="DOCKINGPORT structure"><code class="xref ks ks-struct docutils literal notranslate"><span class="pre">DockingPort</span></code></a>, or the <a class="reference internal" href="../misc/string.html#structure:STRING" title="STRING structure"><code class="xref ks ks-struct docutils literal notranslate"><span class="pre">String</span></code></a> “None” if no such port.</p>
+</dd>
+<dt class="field-even">Access</dt>
+<dd class="field-even"><p>Get only</p>
+</dd>
+</dl>
+<p>The docking port this docking port is attached to.
+If this docking port is not actually attached to another port, attempting
+to call this will return a String instead of a DockingPort, and that String
+will have the value “None”.  (Alternatively, you can test if this
+docking port has a partner port attached by calling
+<code class="xref ks ks-meth docutils literal notranslate"><span class="pre">DockingPort:HASPARTER</span></code>.)</p>
+</dd></dl>
+
+<dl class="ks attribute">
+<dt class="sig sig-object ks" id="attribute:DOCKINGPORT:HASPARTNER">
+<span class="pre">DockingPort:</span><span class="sig-name descname"><span class="pre">HASPARTNER</span></span><a class="headerlink" href="#attribute:DOCKINGPORT:HASPARTNER" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="../misc/boolean.html#structure:BOOLEAN" title="BOOLEAN structure"><code class="xref ks ks-struct docutils literal notranslate"><span class="pre">Boolean</span></code></a></p>
+</dd>
+<dt class="field-even">Access</dt>
+<dd class="field-even"><p>Get only</p>
+</dd>
+</dl>
+<p>Whether or not this docking port is attached to another docking port.</p>
+</dd></dl>
+
+<dl class="ks attribute">
+<dt class="sig sig-object ks" id="attribute:DOCKINGPORT:TARGETABLE">
+<span class="pre">DockingPort:</span><span class="sig-name descname"><span class="pre">TARGETABLE</span></span><a class="headerlink" href="#attribute:DOCKINGPORT:TARGETABLE" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="../misc/boolean.html#structure:BOOLEAN" title="BOOLEAN structure"><code class="xref ks ks-struct docutils literal notranslate"><span class="pre">Boolean</span></code></a></p>
+</dd>
+<dt class="field-even">Access</dt>
+<dd class="field-even"><p>Get only</p>
+</dd>
+</dl>
+<p>True if this part can be picked with <code class="docutils literal notranslate"><span class="pre">SET</span> <span class="pre">TARGET</span> <span class="pre">TO</span></code>.</p>
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="deltav.html" class="btn btn-neutral float-left" title="DeltaV" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="element.html" class="btn btn-neutral float-right" title="Element" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; <a href="../../copyright.html">Copyright</a> 2013-2021, Developed and maintained by kOS Team, Originally By Nivekk.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

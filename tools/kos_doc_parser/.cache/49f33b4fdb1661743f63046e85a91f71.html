@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Message &mdash; kOS 1.4.0.0 documentation</title>
+      <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/css/kos_theme.css" type="text/css" />
+    <link rel="shortcut icon" href="../../_static/favicon.ico"/>
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../_static/doctools.js"></script>
+        <script src="../../_static/sphinx_highlight.js"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="author" title="About these documents" href="../../about.html" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="copyright" title="Copyright" href="../../copyright.html" />
+    <link rel="next" title="MessageQueue" href="message_queue.html" />
+    <link rel="prev" title="Connection" href="connection.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../contents.html" class="icon icon-home"> kOS
+            <img src="../../_static/kos_logo_small.png" class="logo" alt="Logo"/>
+          </a>
+              <div class="version">
+                1.4.0.0
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../index.html">Home</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../contents.html">Table of Contents</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../downloads_links.html">Downloads and Links</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../tutorials.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../library.html">Community Example Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../general.html">General</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../language.html">Language</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../math.html">Mathematics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../commands.html">Commands</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../structures.html">Structures</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../reflection.html">Generic Structure</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../collections.html">Collections</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../volumes_and_files.html">Volumes &amp; Files</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../vessels.html">Vessels &amp; Parts</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../communication.html">Communication</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="connection.html">Connection</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Message</a></li>
+<li class="toctree-l3"><a class="reference internal" href="message_queue.html">MessageQueue</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../orbits.html">Orbits</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../celestial_bodies.html">Celestial Bodies</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../gui.html">GUI Widgets</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../misc.html">Miscellaneous</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../waypoint.html">Waypoints</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../addons.html">Addons</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../contribute.html">Contribute</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../getting_help.html">Getting Help</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../changes.html">Changes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../about.html">About</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../contents.html">kOS</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../contents.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../../structures.html">Structure Reference</a> &raquo;</li>
+          <li><a href="../communication.html">Communication</a> &raquo;</li>
+      <li>Message</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/structures/communication/message.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="message">
+<span id="id1"></span><h1>Message<a class="headerlink" href="#message" title="Permalink to this heading">¶</a></h1>
+<p>Represents a single message stored in a CPU’s or vessel’s <a class="reference internal" href="message_queue.html#structure:MESSAGEQUEUE" title="MESSAGEQUEUE structure"><code class="xref ks ks-struct docutils literal notranslate"><span class="pre">MessageQueue</span></code></a>.</p>
+<p>The main message content that the sender intended to send can be retrieved using <a class="reference internal" href="#attribute:MESSAGE:CONTENT" title="MESSAGE:CONTENT attribute"><code class="xref ks ks-attr docutils literal notranslate"><span class="pre">Message:CONTENT</span></code></a> attribute. Other suffixes are
+automatically added to every message by kOS.</p>
+<p>Messages are serializable and thus can be passed along:</p>
+<div class="highlight-kerboscript notranslate"><div class="highlight"><pre><span></span><span class="c1">// if there is a message in the ship&#39;s message queue</span>
+<span class="c1">// we can forward it to a different CPU</span>
+
+<span class="c1">// cpu1</span>
+<span class="k">SET</span> <span class="nv">CPU2</span> <span class="ow">TO</span> <span class="nv">PROCESSOR</span><span class="p">(</span><span class="s">&quot;cpu2&quot;</span><span class="p">).</span>
+<span class="nv">CPU2</span><span class="p">:</span><span class="nv">CONNECTION</span><span class="p">:</span><span class="nv">SENDMESSAGE</span><span class="p">(</span><span class="nv">SHIP</span><span class="p">:</span><span class="nv">MESSAGES</span><span class="p">:</span><span class="nv">POP</span><span class="p">).</span>
+
+<span class="c1">// cpu2</span>
+<span class="k">SET</span> <span class="nv">RECEIVED</span> <span class="ow">TO</span> <span class="nv">CORE</span><span class="p">:</span><span class="nv">MESSAGES</span><span class="p">:</span><span class="nv">POP</span><span class="p">.</span>
+<span class="k">PRINT</span> <span class="s">&quot;Original message sent at: &quot;</span> <span class="o">+</span> <span class="nv">RECEIVED</span><span class="p">:</span><span class="nv">CONTENT</span><span class="p">:</span><span class="nv">SENTAT</span><span class="p">.</span>
+</pre></div>
+</div>
+<section id="structure">
+<h2>Structure<a class="headerlink" href="#structure" title="Permalink to this heading">¶</a></h2>
+<dl class="ks structure">
+<dt class="sig sig-object ks" id="structure:MESSAGE">
+<em class="property"><span class="pre">structure</span> </em><span class="sig-name descname"><span class="pre">Message</span></span><a class="headerlink" href="#structure:MESSAGE" title="Permalink to this definition">¶</a></dt>
+<dd><table class="colwidths-given docutils align-default">
+<colgroup>
+<col style="width: 29%" />
+<col style="width: 14%" />
+<col style="width: 57%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Suffix</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><a class="reference internal" href="#attribute:MESSAGE:SENTAT" title="MESSAGE:SENTAT attribute"><code class="xref ks ks-attr docutils literal notranslate"><span class="pre">SENTAT</span></code></a></p></td>
+<td><p><a class="reference internal" href="../misc/time.html#structure:TIMESTAMP" title="TIMESTAMP structure"><code class="xref ks ks-struct docutils literal notranslate"><span class="pre">TimeStamp</span></code></a></p></td>
+<td><p>date this message was sent at</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#attribute:MESSAGE:RECEIVEDAT" title="MESSAGE:RECEIVEDAT attribute"><code class="xref ks ks-attr docutils literal notranslate"><span class="pre">RECEIVEDAT</span></code></a></p></td>
+<td><p><a class="reference internal" href="../misc/time.html#structure:TIMESTAMP" title="TIMESTAMP structure"><code class="xref ks ks-struct docutils literal notranslate"><span class="pre">TimeStamp</span></code></a></p></td>
+<td><p>date this message was received at</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#attribute:MESSAGE:SENDER" title="MESSAGE:SENDER attribute"><code class="xref ks ks-attr docutils literal notranslate"><span class="pre">SENDER</span></code></a></p></td>
+<td><p><a class="reference internal" href="../vessels/vessel.html#structure:VESSEL" title="VESSEL structure"><code class="xref ks ks-struct docutils literal notranslate"><span class="pre">Vessel</span></code></a> or <a class="reference internal" href="../misc/boolean.html#structure:BOOLEAN" title="BOOLEAN structure"><code class="xref ks ks-struct docutils literal notranslate"><span class="pre">Boolean</span></code></a></p></td>
+<td><p>vessel which has sent this message, or Boolean false if sender vessel is now gone</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#attribute:MESSAGE:HASSENDER" title="MESSAGE:HASSENDER attribute"><code class="xref ks ks-attr docutils literal notranslate"><span class="pre">HASSENDER</span></code></a></p></td>
+<td><p><a class="reference internal" href="../misc/boolean.html#structure:BOOLEAN" title="BOOLEAN structure"><code class="xref ks ks-struct docutils literal notranslate"><span class="pre">Boolean</span></code></a></p></td>
+<td><p>Tests whether or not the sender vessel still exists.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#attribute:MESSAGE:CONTENT" title="MESSAGE:CONTENT attribute"><code class="xref ks ks-attr docutils literal notranslate"><span class="pre">CONTENT</span></code></a></p></td>
+<td><p><a class="reference internal" href="../reflection/structure.html#structure:STRUCTURE" title="STRUCTURE structure"><code class="xref ks ks-struct docutils literal notranslate"><span class="pre">Structure</span></code></a></p></td>
+<td><p>message content</p></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This type is serializable.</p>
+</div>
+<dl class="ks attribute">
+<dt class="sig sig-object ks" id="attribute:MESSAGE:SENTAT">
+<span class="pre">Message:</span><span class="sig-name descname"><span class="pre">SENTAT</span></span><a class="headerlink" href="#attribute:MESSAGE:SENTAT" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="../misc/time.html#structure:TIMESTAMP" title="TIMESTAMP structure"><code class="xref ks ks-struct docutils literal notranslate"><span class="pre">TimeStamp</span></code></a></p>
+</dd>
+</dl>
+<p>Date this message was sent at.</p>
+</dd></dl>
+
+<dl class="ks attribute">
+<dt class="sig sig-object ks" id="attribute:MESSAGE:RECEIVEDAT">
+<span class="pre">Message:</span><span class="sig-name descname"><span class="pre">RECEIVEDAT</span></span><a class="headerlink" href="#attribute:MESSAGE:RECEIVEDAT" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="../misc/time.html#structure:TIMESTAMP" title="TIMESTAMP structure"><code class="xref ks ks-struct docutils literal notranslate"><span class="pre">TimeStamp</span></code></a></p>
+</dd>
+</dl>
+<p>Date this message was received at.</p>
+</dd></dl>
+
+<dl class="ks attribute">
+<dt class="sig sig-object ks" id="attribute:MESSAGE:SENDER">
+<span class="pre">Message:</span><span class="sig-name descname"><span class="pre">SENDER</span></span><a class="headerlink" href="#attribute:MESSAGE:SENDER" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="../vessels/vessel.html#structure:VESSEL" title="VESSEL structure"><code class="xref ks ks-struct docutils literal notranslate"><span class="pre">Vessel</span></code></a> or <a class="reference internal" href="../misc/boolean.html#structure:BOOLEAN" title="BOOLEAN structure"><code class="xref ks ks-struct docutils literal notranslate"><span class="pre">Boolean</span></code></a></p>
+</dd>
+</dl>
+<p>Vessel which has sent this message, or a boolean false value if
+the sender vessel no longer exists.</p>
+<p>If the sender of the message doesn’t exist anymore (see the explanation
+for <code class="xref ks ks-attr docutils literal notranslate"><span class="pre">HASSENDER</span></code>), this suffix will return a different type
+altogether.  It will be a <a class="reference internal" href="../misc/boolean.html#structure:BOOLEAN" title="BOOLEAN structure"><code class="xref ks ks-struct docutils literal notranslate"><span class="pre">Boolean</span></code></a> (which is false).</p>
+<p>You can check for this condition either by using the <code class="xref ks ks-attr docutils literal notranslate"><span class="pre">HASSENDER</span></code>
+suffix, or by checking the <code class="docutils literal notranslate"><span class="pre">:ISTYPE</span></code> suffix of the sender to
+detect if it’s really a vessel or not.</p>
+</dd></dl>
+
+<dl class="ks attribute">
+<dt class="sig sig-object ks" id="attribute:MESSAGE:HASSENDER">
+<span class="pre">Message:</span><span class="sig-name descname"><span class="pre">HASSENDER</span></span><a class="headerlink" href="#attribute:MESSAGE:HASSENDER" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="../misc/boolean.html#structure:BOOLEAN" title="BOOLEAN structure"><code class="xref ks ks-struct docutils literal notranslate"><span class="pre">Boolean</span></code></a></p>
+</dd>
+</dl>
+<p>Because there can be a delay between when the message was sent and
+when it was processed by the receiving script, it’s possibile that
+the vessel that sent the message might not exist anymore.  It could
+have either exploded, or been recovered, or been merged into another
+vessel via docking.  You can check the value of the <code class="docutils literal notranslate"><span class="pre">:HASSENDER</span></code>
+suffix to find out if the sender of the message is still a valid vessel.
+If <code class="xref ks ks-attr docutils literal notranslate"><span class="pre">HASSENDER</span></code> is false, then <code class="xref ks ks-attr docutils literal notranslate"><span class="pre">SENDER</span></code> won’t give you an
+object of type <a class="reference internal" href="../vessels/vessel.html#structure:VESSEL" title="VESSEL structure"><code class="xref ks ks-struct docutils literal notranslate"><span class="pre">Vessel</span></code></a> and instead will give you just a
+<a class="reference internal" href="../misc/boolean.html#structure:BOOLEAN" title="BOOLEAN structure"><code class="xref ks ks-struct docutils literal notranslate"><span class="pre">Boolean</span></code></a> false.</p>
+</dd></dl>
+
+<dl class="ks attribute">
+<dt class="sig sig-object ks" id="attribute:MESSAGE:CONTENT">
+<span class="pre">Message:</span><span class="sig-name descname"><span class="pre">CONTENT</span></span><a class="headerlink" href="#attribute:MESSAGE:CONTENT" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="../reflection/structure.html#structure:STRUCTURE" title="STRUCTURE structure"><code class="xref ks ks-struct docutils literal notranslate"><span class="pre">Structure</span></code></a></p>
+</dd>
+</dl>
+<p>Content of this message.</p>
+</dd></dl>
+
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="connection.html" class="btn btn-neutral float-left" title="Connection" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="message_queue.html" class="btn btn-neutral float-right" title="MessageQueue" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; <a href="../../copyright.html">Copyright</a> 2013-2021, Developed and maintained by kOS Team, Originally By Nivekk.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

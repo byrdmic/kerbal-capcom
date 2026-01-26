@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Volume &mdash; kOS 1.4.0.0 documentation</title>
+      <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/css/kos_theme.css" type="text/css" />
+    <link rel="shortcut icon" href="../../_static/favicon.ico"/>
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../_static/doctools.js"></script>
+        <script src="../../_static/sphinx_highlight.js"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="author" title="About these documents" href="../../about.html" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="copyright" title="Copyright" href="../../copyright.html" />
+    <link rel="next" title="VolumeDirectory" href="volumedirectory.html" />
+    <link rel="prev" title="Path" href="path.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../contents.html" class="icon icon-home"> kOS
+            <img src="../../_static/kos_logo_small.png" class="logo" alt="Logo"/>
+          </a>
+              <div class="version">
+                1.4.0.0
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../index.html">Home</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../contents.html">Table of Contents</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../downloads_links.html">Downloads and Links</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../tutorials.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../library.html">Community Example Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../general.html">General</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../language.html">Language</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../math.html">Mathematics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../commands.html">Commands</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../structures.html">Structures</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../reflection.html">Generic Structure</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../collections.html">Collections</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../volumes_and_files.html">Volumes &amp; Files</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="filecontent.html">FileContent</a></li>
+<li class="toctree-l3"><a class="reference internal" href="path.html">Path</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Volume</a></li>
+<li class="toctree-l3"><a class="reference internal" href="volumedirectory.html">VolumeDirectory</a></li>
+<li class="toctree-l3"><a class="reference internal" href="volumefile.html">VolumeFile</a></li>
+<li class="toctree-l3"><a class="reference internal" href="volumeitem.html">VolumeItem</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../vessels.html">Vessels &amp; Parts</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../communication.html">Communication</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../orbits.html">Orbits</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../celestial_bodies.html">Celestial Bodies</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../gui.html">GUI Widgets</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../misc.html">Miscellaneous</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../waypoint.html">Waypoints</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../addons.html">Addons</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../contribute.html">Contribute</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../getting_help.html">Getting Help</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../changes.html">Changes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../about.html">About</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../contents.html">kOS</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../contents.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../../structures.html">Structure Reference</a> &raquo;</li>
+          <li><a href="../volumes_and_files.html">Volumes and files</a> &raquo;</li>
+      <li>Volume</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/structures/volumes_and_files/volume.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="volume">
+<span id="id1"></span><h1>Volume<a class="headerlink" href="#volume" title="Permalink to this heading">¶</a></h1>
+<p>Represents a <a class="reference internal" href="../vessels/kosprocessor.html#structure:KOSPROCESSOR" title="KOSPROCESSOR structure"><code class="xref ks ks-struct docutils literal notranslate"><span class="pre">kOSProcessor</span></code></a> hard disk or the archive.</p>
+<dl class="ks structure">
+<dt class="sig sig-object ks" id="structure:VOLUME">
+<em class="property"><span class="pre">structure</span> </em><span class="sig-name descname"><span class="pre">Volume</span></span><a class="headerlink" href="#structure:VOLUME" title="Permalink to this definition">¶</a></dt>
+<dd><table class="colwidths-given docutils align-default">
+<colgroup>
+<col style="width: 29%" />
+<col style="width: 14%" />
+<col style="width: 57%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Suffix</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><a class="reference internal" href="#attribute:VOLUME:FREESPACE" title="VOLUME:FREESPACE attribute"><code class="xref ks ks-attr docutils literal notranslate"><span class="pre">FREESPACE</span></code></a></p></td>
+<td><p><a class="reference internal" href="../../math/scalar.html#structure:SCALAR" title="SCALAR structure"><code class="xref ks ks-struct docutils literal notranslate"><span class="pre">Scalar</span></code></a></p></td>
+<td><p>Free space left on the volume</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#attribute:VOLUME:CAPACITY" title="VOLUME:CAPACITY attribute"><code class="xref ks ks-attr docutils literal notranslate"><span class="pre">CAPACITY</span></code></a></p></td>
+<td><p><a class="reference internal" href="../../math/scalar.html#structure:SCALAR" title="SCALAR structure"><code class="xref ks ks-struct docutils literal notranslate"><span class="pre">Scalar</span></code></a></p></td>
+<td><p>Total space on the volume</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#attribute:VOLUME:NAME" title="VOLUME:NAME attribute"><code class="xref ks ks-attr docutils literal notranslate"><span class="pre">NAME</span></code></a></p></td>
+<td><p><a class="reference internal" href="../misc/string.html#structure:STRING" title="STRING structure"><code class="xref ks ks-struct docutils literal notranslate"><span class="pre">String</span></code></a></p></td>
+<td><p>Get or set volume name</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#attribute:VOLUME:RENAMEABLE" title="VOLUME:RENAMEABLE attribute"><code class="xref ks ks-attr docutils literal notranslate"><span class="pre">RENAMEABLE</span></code></a></p></td>
+<td><p><a class="reference internal" href="../../math/scalar.html#structure:SCALAR" title="SCALAR structure"><code class="xref ks ks-struct docutils literal notranslate"><span class="pre">Scalar</span></code></a></p></td>
+<td><p>True if the name can be changed</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#attribute:VOLUME:ROOT" title="VOLUME:ROOT attribute"><code class="xref ks ks-attr docutils literal notranslate"><span class="pre">ROOT</span></code></a></p></td>
+<td><p><a class="reference internal" href="volumedirectory.html#structure:VOLUMEDIRECTORY" title="VOLUMEDIRECTORY structure"><code class="xref ks ks-struct docutils literal notranslate"><span class="pre">VolumeDirectory</span></code></a></p></td>
+<td><p>Volume’s root directory</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#attribute:VOLUME:FILES" title="VOLUME:FILES attribute"><code class="xref ks ks-attr docutils literal notranslate"><span class="pre">FILES</span></code></a></p></td>
+<td><p><a class="reference internal" href="../collections/lexicon.html#structure:LEXICON" title="LEXICON structure"><code class="xref ks ks-struct docutils literal notranslate"><span class="pre">Lexicon</span></code></a></p></td>
+<td><p>Lexicon of all files and directories on the volume</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#attribute:VOLUME:POWERREQUIREMENT" title="VOLUME:POWERREQUIREMENT attribute"><code class="xref ks ks-attr docutils literal notranslate"><span class="pre">POWERREQUIREMENT</span></code></a></p></td>
+<td><p><a class="reference internal" href="../../math/scalar.html#structure:SCALAR" title="SCALAR structure"><code class="xref ks ks-struct docutils literal notranslate"><span class="pre">Scalar</span></code></a></p></td>
+<td><p>Amount of power consumed when this volume is set as the current volume</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#method:VOLUME:EXISTS" title="VOLUME:EXISTS method"><code class="xref ks ks-meth docutils literal notranslate"><span class="pre">EXISTS(path)</span></code></a></p></td>
+<td><p><a class="reference internal" href="../misc/boolean.html#structure:BOOLEAN" title="BOOLEAN structure"><code class="xref ks ks-struct docutils literal notranslate"><span class="pre">Boolean</span></code></a></p></td>
+<td><p>Returns true if the given file or directory exists</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#method:VOLUME:CREATE" title="VOLUME:CREATE method"><code class="xref ks ks-meth docutils literal notranslate"><span class="pre">CREATE(path)</span></code></a></p></td>
+<td><p><a class="reference internal" href="volumefile.html#structure:VOLUMEFILE" title="VOLUMEFILE structure"><code class="xref ks ks-struct docutils literal notranslate"><span class="pre">VolumeFile</span></code></a></p></td>
+<td><p>Creates a file</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#method:VOLUME:CREATEDIR" title="VOLUME:CREATEDIR method"><code class="xref ks ks-meth docutils literal notranslate"><span class="pre">CREATEDIR(path)</span></code></a></p></td>
+<td><p><a class="reference internal" href="volumedirectory.html#structure:VOLUMEDIRECTORY" title="VOLUMEDIRECTORY structure"><code class="xref ks ks-struct docutils literal notranslate"><span class="pre">VolumeDirectory</span></code></a></p></td>
+<td><p>Creates a directory</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#method:VOLUME:OPEN" title="VOLUME:OPEN method"><code class="xref ks ks-meth docutils literal notranslate"><span class="pre">OPEN(path)</span></code></a></p></td>
+<td><p><a class="reference internal" href="volumeitem.html#structure:VOLUMEITEM" title="VOLUMEITEM structure"><code class="xref ks ks-struct docutils literal notranslate"><span class="pre">VolumeItem</span></code></a> or <a class="reference internal" href="../misc/boolean.html#structure:BOOLEAN" title="BOOLEAN structure"><code class="xref ks ks-struct docutils literal notranslate"><span class="pre">Boolean</span></code></a></p></td>
+<td><p>Opens a file or directory</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#method:VOLUME:DELETE" title="VOLUME:DELETE method"><code class="xref ks ks-meth docutils literal notranslate"><span class="pre">DELETE(path)</span></code></a></p></td>
+<td><p><a class="reference internal" href="../misc/boolean.html#structure:BOOLEAN" title="BOOLEAN structure"><code class="xref ks ks-struct docutils literal notranslate"><span class="pre">Boolean</span></code></a></p></td>
+<td><p>Deletes a file or directory</p></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="ks attribute">
+<dt class="sig sig-object ks" id="attribute:VOLUME:FREESPACE">
+<span class="pre">Volume:</span><span class="sig-name descname"><span class="pre">FREESPACE</span></span><a class="headerlink" href="#attribute:VOLUME:FREESPACE" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="../../math/scalar.html#structure:SCALAR" title="SCALAR structure"><code class="xref ks ks-struct docutils literal notranslate"><span class="pre">Scalar</span></code></a></p>
+</dd>
+<dt class="field-even">Access</dt>
+<dd class="field-even"><p>Get only</p>
+</dd>
+</dl>
+<p>Free space left on the volume</p>
+</dd></dl>
+
+<dl class="ks attribute">
+<dt class="sig sig-object ks" id="attribute:VOLUME:CAPACITY">
+<span class="pre">Volume:</span><span class="sig-name descname"><span class="pre">CAPACITY</span></span><a class="headerlink" href="#attribute:VOLUME:CAPACITY" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="../../math/scalar.html#structure:SCALAR" title="SCALAR structure"><code class="xref ks ks-struct docutils literal notranslate"><span class="pre">Scalar</span></code></a></p>
+</dd>
+<dt class="field-even">Access</dt>
+<dd class="field-even"><p>Get only</p>
+</dd>
+</dl>
+<p>Total space on the volume</p>
+</dd></dl>
+
+<dl class="ks attribute">
+<dt class="sig sig-object ks" id="attribute:VOLUME:NAME">
+<span class="pre">Volume:</span><span class="sig-name descname"><span class="pre">NAME</span></span><a class="headerlink" href="#attribute:VOLUME:NAME" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="../misc/string.html#structure:STRING" title="STRING structure"><code class="xref ks ks-struct docutils literal notranslate"><span class="pre">String</span></code></a></p>
+</dd>
+<dt class="field-even">Access</dt>
+<dd class="field-even"><p>Get and Set</p>
+</dd>
+</dl>
+<p>Gets or sets volume name. This name can be used instead of the volumeId with some <a class="reference internal" href="../../commands/files.html#files"><span class="std std-ref">file and volume-related commands</span></a></p>
+</dd></dl>
+
+<dl class="ks attribute">
+<dt class="sig sig-object ks" id="attribute:VOLUME:RENAMEABLE">
+<span class="pre">Volume:</span><span class="sig-name descname"><span class="pre">RENAMEABLE</span></span><a class="headerlink" href="#attribute:VOLUME:RENAMEABLE" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="../misc/boolean.html#structure:BOOLEAN" title="BOOLEAN structure"><code class="xref ks ks-struct docutils literal notranslate"><span class="pre">Boolean</span></code></a></p>
+</dd>
+<dt class="field-even">Access</dt>
+<dd class="field-even"><p>Get only</p>
+</dd>
+</dl>
+<p>True if the name of this volume can be changed. Currently only the name of the archive can’t be changed.</p>
+</dd></dl>
+
+<dl class="ks attribute">
+<dt class="sig sig-object ks" id="attribute:VOLUME:FILES">
+<span class="pre">Volume:</span><span class="sig-name descname"><span class="pre">FILES</span></span><a class="headerlink" href="#attribute:VOLUME:FILES" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="../collections/lexicon.html#structure:LEXICON" title="LEXICON structure"><code class="xref ks ks-struct docutils literal notranslate"><span class="pre">Lexicon</span></code></a> of <a class="reference internal" href="volumeitem.html#structure:VOLUMEITEM" title="VOLUMEITEM structure"><code class="xref ks ks-struct docutils literal notranslate"><span class="pre">VolumeItem</span></code></a></p>
+</dd>
+<dt class="field-even">Access</dt>
+<dd class="field-even"><p>Get only</p>
+</dd>
+</dl>
+<p>List of files and directories on this volume. Keys are the names of all items on this volume and values are the associated <a class="reference internal" href="volumeitem.html#structure:VOLUMEITEM" title="VOLUMEITEM structure"><code class="xref ks ks-struct docutils literal notranslate"><span class="pre">VolumeItem</span></code></a> structures.</p>
+</dd></dl>
+
+<dl class="ks attribute">
+<dt class="sig sig-object ks" id="attribute:VOLUME:ROOT">
+<span class="pre">Volume:</span><span class="sig-name descname"><span class="pre">ROOT</span></span><a class="headerlink" href="#attribute:VOLUME:ROOT" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="volumedirectory.html#structure:VOLUMEDIRECTORY" title="VOLUMEDIRECTORY structure"><code class="xref ks ks-struct docutils literal notranslate"><span class="pre">VolumeDirectory</span></code></a></p>
+</dd>
+<dt class="field-even">Access</dt>
+<dd class="field-even"><p>Get only</p>
+</dd>
+</dl>
+<p>Returns volume’s root directory</p>
+</dd></dl>
+
+<dl class="ks attribute">
+<dt class="sig sig-object ks" id="attribute:VOLUME:POWERREQUIREMENT">
+<span class="pre">Volume:</span><span class="sig-name descname"><span class="pre">POWERREQUIREMENT</span></span><a class="headerlink" href="#attribute:VOLUME:POWERREQUIREMENT" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="../../math/scalar.html#structure:SCALAR" title="SCALAR structure"><code class="xref ks ks-struct docutils literal notranslate"><span class="pre">Scalar</span></code></a></p>
+</dd>
+<dt class="field-even">Access</dt>
+<dd class="field-even"><p>Get only</p>
+</dd>
+</dl>
+<p>Amount of power consumed when this volume is set as the current volume</p>
+</dd></dl>
+
+<dl class="ks method">
+<dt class="sig sig-object ks" id="method:VOLUME:EXISTS">
+<span class="pre">Volume:</span><span class="sig-name descname"><span class="pre">EXISTS</span></span><span class="sig-paren">(</span><span class="pre">path</span><span class="sig-paren">)</span><a class="headerlink" href="#method:VOLUME:EXISTS" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p><a class="reference internal" href="../misc/boolean.html#structure:BOOLEAN" title="BOOLEAN structure"><code class="xref ks ks-struct docutils literal notranslate"><span class="pre">Boolean</span></code></a></p>
+</dd>
+</dl>
+<p>Returns true if the given file or directory exists. This will also return true when the given file does not exist, but there is a file with the same name and <cite>.ks</cite> or <cite>.ksm</cite> extension added.
+Use <code class="docutils literal notranslate"><span class="pre">Volume:FILES:HASKEY(name)</span></code> to perform a strict check.</p>
+<p>Paths passed as the argument to this command should not contain a volume id or name and should not be relative.</p>
+</dd></dl>
+
+<dl class="ks method">
+<dt class="sig sig-object ks" id="method:VOLUME:OPEN">
+<span class="pre">Volume:</span><span class="sig-name descname"><span class="pre">OPEN</span></span><span class="sig-paren">(</span><span class="pre">path</span><span class="sig-paren">)</span><a class="headerlink" href="#method:VOLUME:OPEN" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p><a class="reference internal" href="volumeitem.html#structure:VOLUMEITEM" title="VOLUMEITEM structure"><code class="xref ks ks-struct docutils literal notranslate"><span class="pre">VolumeItem</span></code></a> or <a class="reference internal" href="../misc/boolean.html#structure:BOOLEAN" title="BOOLEAN structure"><code class="xref ks ks-struct docutils literal notranslate"><span class="pre">Boolean</span></code></a> false</p>
+</dd>
+</dl>
+<p>Opens the file or directory pointed to by the given path and returns <a class="reference internal" href="volumeitem.html#structure:VOLUMEITEM" title="VOLUMEITEM structure"><code class="xref ks ks-struct docutils literal notranslate"><span class="pre">VolumeItem</span></code></a>. It will return a boolean false if the given file or directory does not exist.</p>
+<p>Paths passed as the argument to this command should not contain a volume id or name and should not be relative.</p>
+</dd></dl>
+
+<dl class="ks method">
+<dt class="sig sig-object ks" id="method:VOLUME:CREATE">
+<span class="pre">Volume:</span><span class="sig-name descname"><span class="pre">CREATE</span></span><span class="sig-paren">(</span><span class="pre">path</span><span class="sig-paren">)</span><a class="headerlink" href="#method:VOLUME:CREATE" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p><a class="reference internal" href="volumefile.html#structure:VOLUMEFILE" title="VOLUMEFILE structure"><code class="xref ks ks-struct docutils literal notranslate"><span class="pre">VolumeFile</span></code></a></p>
+</dd>
+</dl>
+<p>Creates a file under the given path and returns <a class="reference internal" href="volumefile.html#structure:VOLUMEFILE" title="VOLUMEFILE structure"><code class="xref ks ks-struct docutils literal notranslate"><span class="pre">VolumeFile</span></code></a>. It will fail if the file already exists.</p>
+<p>Paths passed as the argument to this command should not contain a volume id or name and should not be relative.</p>
+</dd></dl>
+
+<dl class="ks method">
+<dt class="sig sig-object ks" id="method:VOLUME:CREATEDIR">
+<span class="pre">Volume:</span><span class="sig-name descname"><span class="pre">CREATEDIR</span></span><span class="sig-paren">(</span><span class="pre">path</span><span class="sig-paren">)</span><a class="headerlink" href="#method:VOLUME:CREATEDIR" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p><a class="reference internal" href="volumedirectory.html#structure:VOLUMEDIRECTORY" title="VOLUMEDIRECTORY structure"><code class="xref ks ks-struct docutils literal notranslate"><span class="pre">VolumeDirectory</span></code></a></p>
+</dd>
+</dl>
+<p>Creates a directory under the given path and returns <a class="reference internal" href="volumedirectory.html#structure:VOLUMEDIRECTORY" title="VOLUMEDIRECTORY structure"><code class="xref ks ks-struct docutils literal notranslate"><span class="pre">VolumeDirectory</span></code></a>. It will fail if the directory already exists.</p>
+<p>Paths passed as the argument to this command should not contain a volume id or name and should not be relative.</p>
+</dd></dl>
+
+<dl class="ks method">
+<dt class="sig sig-object ks" id="method:VOLUME:DELETE">
+<span class="pre">Volume:</span><span class="sig-name descname"><span class="pre">DELETE</span></span><span class="sig-paren">(</span><span class="pre">path</span><span class="sig-paren">)</span><a class="headerlink" href="#method:VOLUME:DELETE" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>boolean</p>
+</dd>
+</dl>
+<p>Deletes the given file or directory (recursively). It will return true if the given item was successfully deleted and false otherwise.</p>
+<p>Paths passed as the argument to this command should not contain a volume id or name and should not be relative.</p>
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="path.html" class="btn btn-neutral float-left" title="Path" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="volumedirectory.html" class="btn btn-neutral float-right" title="VolumeDirectory" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; <a href="../../copyright.html">Copyright</a> 2013-2021, Developed and maintained by kOS Team, Originally By Nivekk.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

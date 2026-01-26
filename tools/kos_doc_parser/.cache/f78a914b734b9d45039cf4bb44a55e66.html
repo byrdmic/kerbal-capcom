@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Terminal Input &mdash; kOS 1.4.0.0 documentation</title>
+      <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/css/kos_theme.css" type="text/css" />
+    <link rel="shortcut icon" href="../../_static/favicon.ico"/>
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../_static/doctools.js"></script>
+        <script src="../../_static/sphinx_highlight.js"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="author" title="About these documents" href="../../about.html" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="copyright" title="Copyright" href="../../copyright.html" />
+    <link rel="next" title="Time" href="time.html" />
+    <link rel="prev" title="Terminal" href="terminal.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../contents.html" class="icon icon-home"> kOS
+            <img src="../../_static/kos_logo_small.png" class="logo" alt="Logo"/>
+          </a>
+              <div class="version">
+                1.4.0.0
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../index.html">Home</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../contents.html">Table of Contents</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../downloads_links.html">Downloads and Links</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../tutorials.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../library.html">Community Example Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../general.html">General</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../language.html">Language</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../math.html">Mathematics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../commands.html">Commands</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../structures.html">Structures</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../reflection.html">Generic Structure</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../collections.html">Collections</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../volumes_and_files.html">Volumes &amp; Files</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../vessels.html">Vessels &amp; Parts</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../communication.html">Communication</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../orbits.html">Orbits</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../celestial_bodies.html">Celestial Bodies</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../gui.html">GUI Widgets</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../misc.html">Miscellaneous</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="boolean.html">Boolean</a></li>
+<li class="toctree-l3"><a class="reference internal" href="colors.html">Colors</a></li>
+<li class="toctree-l3"><a class="reference internal" href="config.html">Configuration of kOS</a></li>
+<li class="toctree-l3"><a class="reference internal" href="highlight.html">Part Highlighting</a></li>
+<li class="toctree-l3"><a class="reference internal" href="kosdelegate.html">KOSDelegate</a></li>
+<li class="toctree-l3"><a class="reference internal" href="kuniverse.html">KUniverse 4th wall methods</a></li>
+<li class="toctree-l3"><a class="reference internal" href="loaddistance.html">Vessel Load Distance</a></li>
+<li class="toctree-l3"><a class="reference internal" href="loaddistance.html#situation-load-distance">Situation Load Distance</a></li>
+<li class="toctree-l3"><a class="reference internal" href="note.html">Note</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pidloop.html">PIDLoop</a></li>
+<li class="toctree-l3"><a class="reference internal" href="resource_transfer.html">Resource Transfer</a></li>
+<li class="toctree-l3"><a class="reference internal" href="steeringmanager.html">SteeringManager</a></li>
+<li class="toctree-l3"><a class="reference internal" href="string.html">String</a></li>
+<li class="toctree-l3"><a class="reference internal" href="terminal.html">Terminal</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Terminal Input</a></li>
+<li class="toctree-l3"><a class="reference internal" href="time.html">Time</a></li>
+<li class="toctree-l3"><a class="reference internal" href="time.html#timestamp">TimeStamp</a></li>
+<li class="toctree-l3"><a class="reference internal" href="time.html#timespan">TimeSpan</a></li>
+<li class="toctree-l3"><a class="reference internal" href="time.html#constructing">Constructing</a></li>
+<li class="toctree-l3"><a class="reference internal" href="time.html#time-operators">Time Operators</a></li>
+<li class="toctree-l3"><a class="reference internal" href="timewarp.html">WARP</a></li>
+<li class="toctree-l3"><a class="reference internal" href="vecdraw.html">Drawing Vectors on the Screen</a></li>
+<li class="toctree-l3"><a class="reference internal" href="versioninfo.html">Structure</a></li>
+<li class="toctree-l3"><a class="reference internal" href="voice.html">Voice</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../waypoint.html">Waypoints</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../addons.html">Addons</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../contribute.html">Contribute</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../getting_help.html">Getting Help</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../changes.html">Changes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../about.html">About</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../contents.html">kOS</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../contents.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../../structures.html">Structure Reference</a> &raquo;</li>
+          <li><a href="../misc.html">Configurations and Miscellany</a> &raquo;</li>
+      <li>Terminal Input</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/structures/misc/terminalinput.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="terminal-input">
+<span id="terminalinput"></span><h1>Terminal Input<a class="headerlink" href="#terminal-input" title="Permalink to this heading">¶</a></h1>
+<p>You can read the user’s keyboard input into the kOS terminal
+using this structure.  You obtain this structure by calling
+<a class="reference internal" href="terminal.html#attribute:TERMINAL:INPUT" title="TERMINAL:INPUT attribute"><code class="xref ks ks-attr docutils literal notranslate"><span class="pre">Terminal:INPUT</span></code></a>.</p>
+<div class="contents local topic" id="contents">
+<p class="topic-title">CONTENTS</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="#input-is-buffered" id="id2">Input is buffered</a></p></li>
+<li><p><a class="reference internal" href="#input-is-blocking" id="id3">Input is blocking</a></p></li>
+<li><p><a class="reference internal" href="#detecting-special-keys" id="id4">Detecting special keys</a></p></li>
+<li><p><a class="reference internal" href="#cannot-read-control-c" id="id5">Cannot read control-C</a></p></li>
+<li><p><a class="reference internal" href="#cannot-read-shift-or-alt" id="id6">Cannot read “shift” or “alt”</a></p></li>
+<li><p><a class="reference internal" href="#structure" id="id7">Structure</a></p></li>
+</ul>
+</div>
+<section id="input-is-buffered">
+<h2><a class="toc-backref" href="#id2">Input is buffered</a><a class="headerlink" href="#input-is-buffered" title="Permalink to this heading">¶</a></h2>
+<p>Input is buffered if the user types faster than you process
+the input.  (For example, if you have code that reads 1
+character per second, and the user types faster than 1
+character per second, then the letters they typed “in between”
+your reads are not lost.  It just takes time for your
+program to catch up to the backlog and finish processing them
+all.)  This buffer is active for the entire duration of the
+program, which means that you must clear the buffer using
+<a class="reference internal" href="#method:TERMINALINPUT:CLEAR" title="TERMINALINPUT:CLEAR method"><code class="xref ks ks-meth docutils literal notranslate"><span class="pre">TerminalInput:CLEAR</span></code></a> if you need to ensure that the
+contents are in response to a prompt.</p>
+</section>
+<section id="input-is-blocking">
+<h2><a class="toc-backref" href="#id3">Input is blocking</a><a class="headerlink" href="#input-is-blocking" title="Permalink to this heading">¶</a></h2>
+<p>If you attempt to read a character of input and there are
+none available (because the user hasn’t typed anything
+yet for you to read), then your program will pause and
+get stuck there until the user presses a key.  If you want
+to check first to find out if a key is available before
+you read it, use the <a class="reference internal" href="#attribute:TERMINALINPUT:HASCHAR" title="TERMINALINPUT:HASCHAR attribute"><code class="xref ks ks-attr docutils literal notranslate"><span class="pre">HASCHAR</span></code></a>
+suffix described below.</p>
+</section>
+<section id="detecting-special-keys">
+<h2><a class="toc-backref" href="#id4">Detecting special keys</a><a class="headerlink" href="#detecting-special-keys" title="Permalink to this heading">¶</a></h2>
+<p>You can detect some special keys that don’t form normal
+ASCII codes, such as the Left arrow, Page Up, and so on.</p>
+<p>Internally KOS uses its own mapping of these characters to
+its own Unicode codes.  (This is part of the system it uses
+to support a few different types of terminal in the telnet
+module).  You can see some of these code names and use them
+to test against your input characters.  Some of the
+suffixes to <a class="reference internal" href="#structure:TERMINALINPUT" title="TERMINALINPUT structure"><code class="xref ks ks-struct docutils literal notranslate"><span class="pre">TerminalInput</span></code></a> are for this purpose.</p>
+<p>Example:</p>
+<div class="highlight-kerboscript notranslate"><div class="highlight"><pre><span></span><span class="k">set</span> <span class="nv">ch</span> <span class="ow">to</span> <span class="nv">terminal</span><span class="p">:</span><span class="nv">input</span><span class="p">:</span><span class="nv">getchar</span><span class="p">().</span>
+
+<span class="k">if</span> <span class="nv">ch</span> <span class="o">=</span> <span class="nv">terminal</span><span class="p">:</span><span class="nv">input</span><span class="p">:</span><span class="nv">DOWNCURSORONE</span> <span class="p">{</span>
+  <span class="k">print</span> <span class="s">&quot;You typed the down-arrow key.&quot;</span><span class="p">.</span>
+<span class="p">}</span>
+<span class="k">if</span> <span class="nv">ch</span> <span class="o">=</span> <span class="nv">terminal</span><span class="p">:</span><span class="nv">input</span><span class="p">:</span><span class="nv">UPCURSORONE</span> <span class="p">{</span>
+  <span class="k">print</span> <span class="s">&quot;You typed the up-arrow key.&quot;</span><span class="p">.</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+<section id="cannot-read-control-c">
+<h2><a class="toc-backref" href="#id5">Cannot read control-C</a><a class="headerlink" href="#cannot-read-control-c" title="Permalink to this heading">¶</a></h2>
+<p>You cannot read the control-C character in your program, because it
+causes your program to break.</p>
+</section>
+<section id="cannot-read-shift-or-alt">
+<h2><a class="toc-backref" href="#id6">Cannot read “shift” or “alt”</a><a class="headerlink" href="#cannot-read-shift-or-alt" title="Permalink to this heading">¶</a></h2>
+<p>You cannot read the “shift” or “alt” keypresses pressed by themselves
+because they send no characters to the terminal until combined with
+other characters.  (For example “shift A” sends an “A” character, while
+“A” without shift sends a “a” character, but you can’t just read the
+shift key itself.)  This is a deliberate decision because the kOS
+terminal in the game is supposed to be identical to a telnet terminal
+window, and you can’t “send” these sorts of keypresses as characters
+down a stream.</p>
+</section>
+<section id="structure">
+<h2><a class="toc-backref" href="#id7">Structure</a><a class="headerlink" href="#structure" title="Permalink to this heading">¶</a></h2>
+<dl class="ks structure">
+<dt class="sig sig-object ks" id="structure:TERMINALINPUT">
+<em class="property"><span class="pre">structure</span> </em><span class="sig-name descname"><span class="pre">TerminalInput</span></span><a class="headerlink" href="#structure:TERMINALINPUT" title="Permalink to this definition">¶</a></dt>
+<dd><table class="colwidths-given docutils align-default" id="id1">
+<caption><span class="caption-text">Members</span><a class="headerlink" href="#id1" title="Permalink to this table">¶</a></caption>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 13%" />
+<col style="width: 13%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Suffix</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Get/Set</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><a class="reference internal" href="#method:TERMINALINPUT:GETCHAR" title="TERMINALINPUT:GETCHAR method"><code class="xref ks ks-meth docutils literal notranslate"><span class="pre">GETCHAR</span></code></a></p></td>
+<td><p><a class="reference internal" href="string.html#structure:STRING" title="STRING structure"><code class="xref ks ks-struct docutils literal notranslate"><span class="pre">String</span></code></a></p></td>
+<td><p>Get</p></td>
+<td><p>(Blocking) I/O to read the next character of terminal input.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#attribute:TERMINALINPUT:HASCHAR" title="TERMINALINPUT:HASCHAR attribute"><code class="xref ks ks-attr docutils literal notranslate"><span class="pre">HASCHAR</span></code></a></p></td>
+<td><p><a class="reference internal" href="boolean.html#structure:BOOLEAN" title="BOOLEAN structure"><code class="xref ks ks-struct docutils literal notranslate"><span class="pre">Boolean</span></code></a></p></td>
+<td><p>Get</p></td>
+<td><p>True if there is at least 1 character of input waiting.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#method:TERMINALINPUT:CLEAR" title="TERMINALINPUT:CLEAR method"><code class="xref ks ks-meth docutils literal notranslate"><span class="pre">CLEAR</span></code></a></p></td>
+<td><p>None</p></td>
+<td><p>Method Call</p></td>
+<td><p>Call this method to throw away all waiting input characters, flushing the input queue.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#attribute:TERMINALINPUT:BACKSPACE" title="TERMINALINPUT:BACKSPACE attribute"><code class="xref ks ks-attr docutils literal notranslate"><span class="pre">BACKSPACE</span></code></a></p></td>
+<td><p><a class="reference internal" href="string.html#structure:STRING" title="STRING structure"><code class="xref ks ks-struct docutils literal notranslate"><span class="pre">String</span></code></a></p></td>
+<td><p>Get</p></td>
+<td><p>A string for testing if the character read is a backspace.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#attribute:TERMINALINPUT:DELETERIGHT" title="TERMINALINPUT:DELETERIGHT attribute"><code class="xref ks ks-attr docutils literal notranslate"><span class="pre">DELETERIGHT</span></code></a></p></td>
+<td><p><a class="reference internal" href="string.html#structure:STRING" title="STRING structure"><code class="xref ks ks-struct docutils literal notranslate"><span class="pre">String</span></code></a></p></td>
+<td><p>Get</p></td>
+<td><p>A string for testing if the character read is the delete (to the right) key.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#attribute:TERMINALINPUT:RETURN" title="TERMINALINPUT:RETURN attribute"><code class="xref ks ks-attr docutils literal notranslate"><span class="pre">RETURN</span></code></a></p></td>
+<td><p><a class="reference internal" href="string.html#structure:STRING" title="STRING structure"><code class="xref ks ks-struct docutils literal notranslate"><span class="pre">String</span></code></a></p></td>
+<td><p>Get</p></td>
+<td><p>A string for testing if the character read is the return key.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#attribute:TERMINALINPUT:ENTER" title="TERMINALINPUT:ENTER attribute"><code class="xref ks ks-attr docutils literal notranslate"><span class="pre">ENTER</span></code></a></p></td>
+<td><p><a class="reference internal" href="string.html#structure:STRING" title="STRING structure"><code class="xref ks ks-struct docutils literal notranslate"><span class="pre">String</span></code></a></p></td>
+<td><p>Get</p></td>
+<td><p>An alias for <a class="reference internal" href="#attribute:TERMINALINPUT:RETURN" title="TERMINALINPUT:RETURN attribute"><code class="xref ks ks-attr docutils literal notranslate"><span class="pre">RETURN</span></code></a></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#attribute:TERMINALINPUT:UPCURSORONE" title="TERMINALINPUT:UPCURSORONE attribute"><code class="xref ks ks-attr docutils literal notranslate"><span class="pre">UPCURSORONE</span></code></a></p></td>
+<td><p><a class="reference internal" href="string.html#structure:STRING" title="STRING structure"><code class="xref ks ks-struct docutils literal notranslate"><span class="pre">String</span></code></a></p></td>
+<td><p>Get</p></td>
+<td><p>A string for testing if the character read is the up-arrow key.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#attribute:TERMINALINPUT:DOWNCURSORONE" title="TERMINALINPUT:DOWNCURSORONE attribute"><code class="xref ks ks-attr docutils literal notranslate"><span class="pre">DOWNCURSORONE</span></code></a></p></td>
+<td><p><a class="reference internal" href="string.html#structure:STRING" title="STRING structure"><code class="xref ks ks-struct docutils literal notranslate"><span class="pre">String</span></code></a></p></td>
+<td><p>Get</p></td>
+<td><p>A string for testing if the character read is the down-arrow key.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#attribute:TERMINALINPUT:LEFTCURSORONE" title="TERMINALINPUT:LEFTCURSORONE attribute"><code class="xref ks ks-attr docutils literal notranslate"><span class="pre">LEFTCURSORONE</span></code></a></p></td>
+<td><p><a class="reference internal" href="string.html#structure:STRING" title="STRING structure"><code class="xref ks ks-struct docutils literal notranslate"><span class="pre">String</span></code></a></p></td>
+<td><p>Get</p></td>
+<td><p>A string for testing if the character read is the left-arrow key.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#attribute:TERMINALINPUT:RIGHTCURSORONE" title="TERMINALINPUT:RIGHTCURSORONE attribute"><code class="xref ks ks-attr docutils literal notranslate"><span class="pre">RIGHTCURSORONE</span></code></a></p></td>
+<td><p><a class="reference internal" href="string.html#structure:STRING" title="STRING structure"><code class="xref ks ks-struct docutils literal notranslate"><span class="pre">String</span></code></a></p></td>
+<td><p>Get</p></td>
+<td><p>A string for testing if the character read is the right-arrow key.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#attribute:TERMINALINPUT:HOMECURSOR" title="TERMINALINPUT:HOMECURSOR attribute"><code class="xref ks ks-attr docutils literal notranslate"><span class="pre">HOMECURSOR</span></code></a></p></td>
+<td><p><a class="reference internal" href="string.html#structure:STRING" title="STRING structure"><code class="xref ks ks-struct docutils literal notranslate"><span class="pre">String</span></code></a></p></td>
+<td><p>Get</p></td>
+<td><p>A string for testing if the character read is the HOME key.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#attribute:TERMINALINPUT:ENDCURSOR" title="TERMINALINPUT:ENDCURSOR attribute"><code class="xref ks ks-attr docutils literal notranslate"><span class="pre">ENDCURSOR</span></code></a></p></td>
+<td><p><a class="reference internal" href="string.html#structure:STRING" title="STRING structure"><code class="xref ks ks-struct docutils literal notranslate"><span class="pre">String</span></code></a></p></td>
+<td><p>Get</p></td>
+<td><p>A string for testing if the character read is the END key.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#attribute:TERMINALINPUT:PAGEUPCURSOR" title="TERMINALINPUT:PAGEUPCURSOR attribute"><code class="xref ks ks-attr docutils literal notranslate"><span class="pre">PAGEUPCURSOR</span></code></a></p></td>
+<td><p><a class="reference internal" href="string.html#structure:STRING" title="STRING structure"><code class="xref ks ks-struct docutils literal notranslate"><span class="pre">String</span></code></a></p></td>
+<td><p>Get</p></td>
+<td><p>A string for testing if the character read is the PageUp key.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#attribute:TERMINALINPUT:PAGEDOWNCURSOR" title="TERMINALINPUT:PAGEDOWNCURSOR attribute"><code class="xref ks ks-attr docutils literal notranslate"><span class="pre">PAGEDOWNCURSOR</span></code></a></p></td>
+<td><p><a class="reference internal" href="string.html#structure:STRING" title="STRING structure"><code class="xref ks ks-struct docutils literal notranslate"><span class="pre">String</span></code></a></p></td>
+<td><p>Get</p></td>
+<td><p>A string for testing if the character read is the PageDown key.</p></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="ks method">
+<dt class="sig sig-object ks" id="method:TERMINALINPUT:GETCHAR">
+<span class="pre">TerminalInput:</span><span class="sig-name descname"><span class="pre">GETCHAR</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#method:TERMINALINPUT:GETCHAR" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Access</dt>
+<dd class="field-odd"><p>Get (Method call)</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><a class="reference internal" href="string.html#structure:STRING" title="STRING structure"><code class="xref ks ks-struct docutils literal notranslate"><span class="pre">String</span></code></a></p>
+</dd>
+</dl>
+<p>Read the next character of terminal input.  If the user hasn’t typed
+anything in that is still waiting to be read, then this will “block”
+(meaning it will pause the execution of the program) until there
+is a character that has been typed that can be processed.</p>
+<p>The character will be expressed in a string containing 1 char.</p>
+<p>If you need to check against “unprintable” characters such as
+backspace (control-H) and so on, you can do so with the
+<a class="reference internal" href="../../math/basic.html#function:UNCHAR" title="UNCHAR function"><code class="xref ks ks-func docutils literal notranslate"><span class="pre">unchar</span></code></a> function, or by using the aliases described elsewhere
+in this structure.</p>
+</dd></dl>
+
+<dl class="ks attribute">
+<dt class="sig sig-object ks" id="attribute:TERMINALINPUT:HASCHAR">
+<span class="pre">TerminalInput:</span><span class="sig-name descname"><span class="pre">HASCHAR</span></span><a class="headerlink" href="#attribute:TERMINALINPUT:HASCHAR" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Access</dt>
+<dd class="field-odd"><p>Get (method call)</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p><a class="reference internal" href="boolean.html#structure:BOOLEAN" title="BOOLEAN structure"><code class="xref ks ks-struct docutils literal notranslate"><span class="pre">Boolean</span></code></a></p>
+</dd>
+</dl>
+<p>True if there is at least 1 character of input waiting.  If this is
+false then that would mean that an attempt to call <a class="reference internal" href="#method:TERMINALINPUT:GETCHAR" title="TERMINALINPUT:GETCHAR method"><code class="xref ks ks-meth docutils literal notranslate"><span class="pre">GETCHAR</span></code></a>
+would block and wait for user input.  If this is true then an attempt
+to call <a class="reference internal" href="#method:TERMINALINPUT:GETCHAR" title="TERMINALINPUT:GETCHAR method"><code class="xref ks ks-meth docutils literal notranslate"><span class="pre">GETCHAR</span></code></a> would return immediately with an answer.</p>
+<p>You can simulate non-blocking I/O like so:</p>
+<div class="highlight-kerboscript notranslate"><div class="highlight"><pre><span></span><span class="c1">// Read a char if it exists, else just keep going:</span>
+<span class="k">if</span> <span class="nv">terminal</span><span class="p">:</span><span class="nv">input</span><span class="p">:</span><span class="nv">haschar</span> <span class="p">{</span>
+  <span class="nv">process_one_char</span><span class="p">(</span><span class="nv">terminal</span><span class="p">:</span><span class="nv">input</span><span class="p">:</span><span class="nv">getchar</span><span class="p">()).</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="ks method">
+<dt class="sig sig-object ks" id="method:TERMINALINPUT:CLEAR">
+<span class="pre">TerminalInput:</span><span class="sig-name descname"><span class="pre">CLEAR</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#method:TERMINALINPUT:CLEAR" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Access</dt>
+<dd class="field-odd"><p>Get (method call)</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+<p>Call this method to throw away all waiting input characters, flushing
+the input queue.</p>
+</dd></dl>
+
+<dl class="ks attribute">
+<dt class="sig sig-object ks" id="attribute:TERMINALINPUT:BACKSPACE">
+<span class="pre">TerminalInput:</span><span class="sig-name descname"><span class="pre">BACKSPACE</span></span><a class="headerlink" href="#attribute:TERMINALINPUT:BACKSPACE" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Access</dt>
+<dd class="field-odd"><p>Get</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p><a class="reference internal" href="string.html#structure:STRING" title="STRING structure"><code class="xref ks ks-struct docutils literal notranslate"><span class="pre">String</span></code></a></p>
+</dd>
+</dl>
+<p>A string for testing if the character read is a backspace.</p>
+</dd></dl>
+
+<dl class="ks attribute">
+<dt class="sig sig-object ks" id="attribute:TERMINALINPUT:DELETERIGHT">
+<span class="pre">TerminalInput:</span><span class="sig-name descname"><span class="pre">DELETERIGHT</span></span><a class="headerlink" href="#attribute:TERMINALINPUT:DELETERIGHT" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Access</dt>
+<dd class="field-odd"><p>Get</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p><a class="reference internal" href="string.html#structure:STRING" title="STRING structure"><code class="xref ks ks-struct docutils literal notranslate"><span class="pre">String</span></code></a></p>
+</dd>
+</dl>
+<p>A string for testing if the character read is the delete (to the right) key.</p>
+</dd></dl>
+
+<dl class="ks attribute">
+<dt class="sig sig-object ks" id="attribute:TERMINALINPUT:RETURN">
+<span class="pre">TerminalInput:</span><span class="sig-name descname"><span class="pre">RETURN</span></span><a class="headerlink" href="#attribute:TERMINALINPUT:RETURN" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Access</dt>
+<dd class="field-odd"><p>Get</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p><a class="reference internal" href="string.html#structure:STRING" title="STRING structure"><code class="xref ks ks-struct docutils literal notranslate"><span class="pre">String</span></code></a></p>
+</dd>
+</dl>
+<p>A string for testing if the character read is the return key.</p>
+</dd></dl>
+
+<dl class="ks attribute">
+<dt class="sig sig-object ks" id="attribute:TERMINALINPUT:ENTER">
+<span class="pre">TerminalInput:</span><span class="sig-name descname"><span class="pre">ENTER</span></span><a class="headerlink" href="#attribute:TERMINALINPUT:ENTER" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Access</dt>
+<dd class="field-odd"><p>Get</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p><a class="reference internal" href="string.html#structure:STRING" title="STRING structure"><code class="xref ks ks-struct docutils literal notranslate"><span class="pre">String</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="ks attribute">
+<dt class="sig sig-object ks" id="attribute:TERMINALINPUT:UPCURSORONE">
+<span class="pre">TerminalInput:</span><span class="sig-name descname"><span class="pre">UPCURSORONE</span></span><a class="headerlink" href="#attribute:TERMINALINPUT:UPCURSORONE" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Access</dt>
+<dd class="field-odd"><p>Get</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p><a class="reference internal" href="string.html#structure:STRING" title="STRING structure"><code class="xref ks ks-struct docutils literal notranslate"><span class="pre">String</span></code></a></p>
+</dd>
+</dl>
+<p>A string for testing if the character read is the up-arrow key.</p>
+</dd></dl>
+
+<dl class="ks attribute">
+<dt class="sig sig-object ks" id="attribute:TERMINALINPUT:DOWNCURSORONE">
+<span class="pre">TerminalInput:</span><span class="sig-name descname"><span class="pre">DOWNCURSORONE</span></span><a class="headerlink" href="#attribute:TERMINALINPUT:DOWNCURSORONE" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Access</dt>
+<dd class="field-odd"><p>Get</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p><a class="reference internal" href="string.html#structure:STRING" title="STRING structure"><code class="xref ks ks-struct docutils literal notranslate"><span class="pre">String</span></code></a></p>
+</dd>
+</dl>
+<p>A string for testing if the character read is the down-arrow key.</p>
+</dd></dl>
+
+<dl class="ks attribute">
+<dt class="sig sig-object ks" id="attribute:TERMINALINPUT:LEFTCURSORONE">
+<span class="pre">TerminalInput:</span><span class="sig-name descname"><span class="pre">LEFTCURSORONE</span></span><a class="headerlink" href="#attribute:TERMINALINPUT:LEFTCURSORONE" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Access</dt>
+<dd class="field-odd"><p>Get</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p><a class="reference internal" href="string.html#structure:STRING" title="STRING structure"><code class="xref ks ks-struct docutils literal notranslate"><span class="pre">String</span></code></a></p>
+</dd>
+</dl>
+<p>A string for testing if the character read is the left-arrow key.</p>
+</dd></dl>
+
+<dl class="ks attribute">
+<dt class="sig sig-object ks" id="attribute:TERMINALINPUT:RIGHTCURSORONE">
+<span class="pre">TerminalInput:</span><span class="sig-name descname"><span class="pre">RIGHTCURSORONE</span></span><a class="headerlink" href="#attribute:TERMINALINPUT:RIGHTCURSORONE" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Access</dt>
+<dd class="field-odd"><p>Get</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p><a class="reference internal" href="string.html#structure:STRING" title="STRING structure"><code class="xref ks ks-struct docutils literal notranslate"><span class="pre">String</span></code></a></p>
+</dd>
+</dl>
+<p>A string for testing if the character read is the right-arrow key.</p>
+</dd></dl>
+
+<dl class="ks attribute">
+<dt class="sig sig-object ks" id="attribute:TERMINALINPUT:HOMECURSOR">
+<span class="pre">TerminalInput:</span><span class="sig-name descname"><span class="pre">HOMECURSOR</span></span><a class="headerlink" href="#attribute:TERMINALINPUT:HOMECURSOR" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Access</dt>
+<dd class="field-odd"><p>Get</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p><a class="reference internal" href="string.html#structure:STRING" title="STRING structure"><code class="xref ks ks-struct docutils literal notranslate"><span class="pre">String</span></code></a></p>
+</dd>
+</dl>
+<p>A string for testing if the character read is the HOME key.</p>
+</dd></dl>
+
+<dl class="ks attribute">
+<dt class="sig sig-object ks" id="attribute:TERMINALINPUT:ENDCURSOR">
+<span class="pre">TerminalInput:</span><span class="sig-name descname"><span class="pre">ENDCURSOR</span></span><a class="headerlink" href="#attribute:TERMINALINPUT:ENDCURSOR" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Access</dt>
+<dd class="field-odd"><p>Get</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p><a class="reference internal" href="string.html#structure:STRING" title="STRING structure"><code class="xref ks ks-struct docutils literal notranslate"><span class="pre">String</span></code></a></p>
+</dd>
+</dl>
+<p>A string for testing if the character read is the END key.</p>
+</dd></dl>
+
+<dl class="ks attribute">
+<dt class="sig sig-object ks" id="attribute:TERMINALINPUT:PAGEUPCURSOR">
+<span class="pre">TerminalInput:</span><span class="sig-name descname"><span class="pre">PAGEUPCURSOR</span></span><a class="headerlink" href="#attribute:TERMINALINPUT:PAGEUPCURSOR" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Access</dt>
+<dd class="field-odd"><p>Get</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p><a class="reference internal" href="string.html#structure:STRING" title="STRING structure"><code class="xref ks ks-struct docutils literal notranslate"><span class="pre">String</span></code></a></p>
+</dd>
+</dl>
+<p>A string for testing if the character read is the PageUp key.</p>
+</dd></dl>
+
+<dl class="ks attribute">
+<dt class="sig sig-object ks" id="attribute:TERMINALINPUT:PAGEDOWNCURSOR">
+<span class="pre">TerminalInput:</span><span class="sig-name descname"><span class="pre">PAGEDOWNCURSOR</span></span><a class="headerlink" href="#attribute:TERMINALINPUT:PAGEDOWNCURSOR" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Access</dt>
+<dd class="field-odd"><p>Get</p>
+</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even"><p><a class="reference internal" href="string.html#structure:STRING" title="STRING structure"><code class="xref ks ks-struct docutils literal notranslate"><span class="pre">String</span></code></a></p>
+</dd>
+</dl>
+<p>A string for testing if the character read is the PageDown key.</p>
+</dd></dl>
+
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="terminal.html" class="btn btn-neutral float-left" title="Terminal" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="time.html" class="btn btn-neutral float-right" title="Time" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; <a href="../../copyright.html">Copyright</a> 2013-2021, Developed and maintained by kOS Team, Originally By Nivekk.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
