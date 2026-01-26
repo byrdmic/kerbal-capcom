@@ -108,6 +108,10 @@
     <Compile Include="Responders\EchoResponder.cs" />
     <Compile Include="Responders\IResponder.cs" />
     <Compile Include="Responders\LLMResponder.cs" />
+    <Compile Include="KosDocs\DocEntry.cs" />
+    <Compile Include="KosDocs\KosDocIndex.cs" />
+    <Compile Include="KosDocs\KosDocLoader.cs" />
+    <Compile Include="KosDocs\KosDocService.cs" />
     <Compile Include="SecretStore.cs" />
     <Compile Include="ToolbarButton.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

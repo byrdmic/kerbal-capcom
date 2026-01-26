@@ -27,6 +27,10 @@
     <Compile Include="..\KSPCapcom\LLM\LLMResponse.cs" Link="LLMResponse.cs" />
     <Compile Include="..\KSPCapcom\LLM\LLMUsage.cs" Link="LLMUsage.cs" />
     <Compile Include="..\KSPCapcom\MessageRole.cs" Link="MessageRole.cs" />
+    <Compile Include="..\KSPCapcom\KosDocs\DocEntry.cs" Link="KosDocs\DocEntry.cs" />
+    <Compile Include="..\KSPCapcom\KosDocs\KosDocIndex.cs" Link="KosDocs\KosDocIndex.cs" />
+    <Compile Include="..\KSPCapcom\KosDocs\KosDocLoader.cs" Link="KosDocs\KosDocLoader.cs" />
+    <Compile Include="..\KSPCapcom\KosDocs\KosDocService.cs" Link="KosDocs\KosDocService.cs" />
   </ItemGroup>
 
 </Project>

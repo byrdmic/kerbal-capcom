@@ -44,8 +44,14 @@ namespace KSPCapcom.Responders
                 return ResponderResult.Fail("API key not configured - see secrets.cfg.template");
             }
 
+            // Build context for the user message (includes relevant kOS docs)
+            var userContext = _promptBuilder.BuildUserContext(userMessage);
+            var enrichedUserMessage = string.IsNullOrEmpty(userContext)
+                ? userMessage
+                : userContext + userMessage;
+
             // Convert conversation history to LLMMessage list
-            var messages = ConvertHistory(conversationHistory, userMessage);
+            var messages = ConvertHistory(conversationHistory, enrichedUserMessage, userMessage);
 
             // Build request options with current system prompt from prompt builder
             // This ensures mode changes take effect immediately
@@ -96,7 +102,13 @@ namespace KSPCapcom.Responders
         /// Convert ChatMessage history to LLMMessage list.
         /// Skips system messages and pending messages.
         /// </summary>
-        private List<LLMMessage> ConvertHistory(IReadOnlyList<ChatMessage> history, string currentUserMessage)
+        /// <param name="history">Conversation history.</param>
+        /// <param name="enrichedUserMessage">The current user message with context prepended.</param>
+        /// <param name="originalUserMessage">The original user message for matching in history.</param>
+        private List<LLMMessage> ConvertHistory(
+            IReadOnlyList<ChatMessage> history,
+            string enrichedUserMessage,
+            string originalUserMessage)
         {
             var messages = new List<LLMMessage>();
 
@@ -111,18 +123,27 @@ namespace KSPCapcom.Responders
                 if (msg.Role == MessageRole.System)
                     continue;
 
-                messages.Add(new LLMMessage(msg.Role, msg.Text));
+                // For the current user message in history, use the enriched version
+                if (msg.Role == MessageRole.User && msg.Text == originalUserMessage)
+                {
+                    messages.Add(new LLMMessage(MessageRole.User, enrichedUserMessage));
+                }
+                else
+                {
+                    messages.Add(new LLMMessage(msg.Role, msg.Text));
+                }
             }
 
             // The current user message should already be in history, but ensure it's included
             // If the last message isn't from the user with matching content, add it
             bool lastIsCurrentUser = messages.Count > 0 &&
                                      messages[messages.Count - 1].Role == MessageRole.User &&
-                                     messages[messages.Count - 1].Content == currentUserMessage;
+                                     (messages[messages.Count - 1].Content == enrichedUserMessage ||
+                                      messages[messages.Count - 1].Content == originalUserMessage);
 
             if (!lastIsCurrentUser)
             {
-                messages.Add(LLMMessage.User(currentUserMessage));
+                messages.Add(LLMMessage.User(enrichedUserMessage));
             }
 
             return messages;

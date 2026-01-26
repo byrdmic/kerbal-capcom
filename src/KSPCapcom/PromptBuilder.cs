@@ -1,5 +1,6 @@
 using System;
 using System.Text;
+using KSPCapcom.KosDocs;
 #if KSP_PRESENT
 using KSPCapcom.Editor;
 #endif
@@ -92,22 +93,21 @@ namespace KSPCapcom
             "Refer to Kerbals by name when relevant; they're the heroes of the mission.";
 
         /// <summary>
-        /// Placeholder marker for future tool instructions.
-        /// When tool support is added, this section will contain instructions for using
-        /// grounding tools like kOS documentation retrieval.
+        /// Get tool/reference instructions for the system prompt.
+        /// Returns information about kOS documentation availability.
         /// </summary>
-        /// <remarks>
-        /// Currently returns empty string. When tools are implemented, this will return
-        /// instructions like: "You have access to the following tools: [tool descriptions]"
-        /// </remarks>
         private static string GetToolInstructions()
         {
-            // FUTURE: Insert tool instructions here when kOS docs retrieval is implemented.
-            // Example future content:
-            // return "TOOLS AVAILABLE:\n" +
-            //        "- kos_docs: Search kOS documentation for functions and syntax.\n" +
-            //        "Use tools when you need to verify kOS syntax or find specific functions.";
-            return string.Empty;
+            if (!KosDocService.Instance.IsReady)
+            {
+                return string.Empty;
+            }
+
+            return "REFERENCE DATA AVAILABLE:\n" +
+                   "You have access to kOS documentation for accurate syntax and API information. " +
+                   "When relevant documentation is provided with the user's message, prioritize it " +
+                   "for accurate kOS code examples. The documentation includes structures, suffixes, " +
+                   "functions, keywords, and commands from kOS " + KosDocService.Instance.ContentVersion + ".";
         }
 
         private readonly Func<CapcomSettings> _getSettings;
@@ -235,6 +235,48 @@ namespace KSPCapcom
             var testSettings = new CapcomSettings { Mode = mode };
             var builder = new PromptBuilder(testSettings);
             return builder.BuildSystemPrompt();
+        }
+
+        /// <summary>
+        /// Build contextual information for a user query, including relevant kOS documentation.
+        /// This augments the user's message with grounding data.
+        /// </summary>
+        /// <param name="userQuery">The user's question or request.</param>
+        /// <returns>Context string to prepend to the user message, or empty if none.</returns>
+        public string BuildUserContext(string userQuery)
+        {
+            try
+            {
+                var parts = new System.Collections.Generic.List<string>();
+
+                // Add kOS documentation if relevant
+                var kosDocs = KosDocService.Instance.FormatRelevantDocsForPrompt(userQuery, 5);
+                if (!string.IsNullOrEmpty(kosDocs))
+                {
+                    parts.Add(kosDocs);
+                }
+
+#if KSP_PRESENT
+                // Add craft context if in editor
+                var craftContext = BuildCraftContext();
+                if (!string.IsNullOrEmpty(craftContext))
+                {
+                    parts.Add("CURRENT CRAFT:\n" + craftContext);
+                }
+#endif
+
+                if (parts.Count == 0)
+                {
+                    return string.Empty;
+                }
+
+                return string.Join("\n", parts) + "\n---\n";
+            }
+            catch (Exception ex)
+            {
+                CapcomCore.LogWarning($"PromptBuilder.BuildUserContext failed: {ex.Message}");
+                return string.Empty;
+            }
         }
 
 #if KSP_PRESENT

@@ -3,6 +3,7 @@ using System.Reflection;
 using UnityEngine;
 using KSPCapcom.Critique;
 using KSPCapcom.Editor;
+using KSPCapcom.KosDocs;
 using KSPCapcom.LLM;
 using KSPCapcom.LLM.OpenAI;
 using KSPCapcom.Responders;
@@ -128,6 +129,28 @@ namespace KSPCapcom
             {
                 InitializeEditorMonitor();
             }
+
+            // Initialize kOS documentation index (loads async)
+            InitializeKosDocs();
+        }
+
+        /// <summary>
+        /// Initialize the kOS documentation service.
+        /// Loading is async to avoid frame hitches.
+        /// </summary>
+        private void InitializeKosDocs()
+        {
+            KosDocService.Instance.Initialize(success =>
+            {
+                if (success)
+                {
+                    Log($"kOS docs loaded: {KosDocService.Instance.EntryCount} entries");
+                }
+                else
+                {
+                    LogWarning("kOS docs failed to load - kOS syntax help will be limited");
+                }
+            });
         }
 
         /// <summary>
