@@ -13,6 +13,9 @@ namespace KSPCapcom
         Assistant,
 
         /// <summary>System message (status, errors, internal notes).</summary>
-        System
+        System,
+
+        /// <summary>Tool response message (result of a function call).</summary>
+        Tool
     }
 }

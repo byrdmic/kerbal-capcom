@@ -273,7 +273,9 @@ namespace KSPCapcom.LLM.OpenAI
                 Model = options?.Model ?? _getModel() ?? DEFAULT_MODEL,
                 Temperature = options?.Temperature ?? LLMRequestOptions.DefaultTemperature,
                 MaxTokens = options?.MaxTokens ?? LLMRequestOptions.DefaultMaxTokens,
-                Stream = streaming
+                Stream = streaming,
+                Tools = options?.Tools,
+                ToolChoice = options?.ToolChoice
             };
 
             // Add system prompt if specified
@@ -285,10 +287,26 @@ namespace KSPCapcom.LLM.OpenAI
             // Convert messages
             foreach (var msg in messages)
             {
-                request.Messages.Add(new ChatMessageDto(
-                    ChatMessageDto.RoleToString(msg.Role),
-                    msg.Content
-                ));
+                var dto = new ChatMessageDto
+                {
+                    Role = ChatMessageDto.RoleToString(msg.Role),
+                    Content = msg.Content
+                };
+
+                // Handle tool calls for assistant messages
+                if (msg.ToolCalls != null && msg.ToolCalls.Count > 0)
+                {
+                    dto.ToolCalls = new List<ToolCall>(msg.ToolCalls);
+                }
+
+                // Handle tool response messages
+                if (msg.Role == MessageRole.Tool)
+                {
+                    dto.ToolCallId = msg.ToolCallId;
+                    dto.Name = msg.Name;
+                }
+
+                request.Messages.Add(dto);
             }
 
             return request;
@@ -301,6 +319,17 @@ namespace KSPCapcom.LLM.OpenAI
                 var response = JsonParser.ParseChatCompletionResponse(responseBody);
                 var content = response.GetContent();
                 var usage = response.Usage?.ToLLMUsage();
+
+                // Check for tool calls
+                if (response.Choices != null && response.Choices.Count > 0)
+                {
+                    var firstChoice = response.Choices[0];
+                    if (firstChoice.ToolCalls != null && firstChoice.ToolCalls.Count > 0)
+                    {
+                        CapcomCore.Log($"Response contains {firstChoice.ToolCalls.Count} tool call(s)");
+                        return LLMResponse.WithToolCalls(firstChoice.ToolCalls, content, usage, response.Model);
+                    }
+                }
 
                 return LLMResponse.Ok(content, usage, response.Model);
             }

@@ -211,6 +211,18 @@ namespace KSPCapcom.KosDocs
         /// <param name="query">Search text (case-insensitive).</param>
         /// <param name="maxResults">Maximum results to return.</param>
         /// <returns>Matching entries, ordered by relevance (ID match > name match > description match).</returns>
+        /// <remarks>
+        /// Scoring algorithm:
+        /// - 100: Exact ID match
+        /// - 90: ID starts with query (prefix match)
+        /// - 80: ID contains query
+        /// - 75: Name starts with query (prefix match)
+        /// - 70: Exact name match
+        /// - 60: Name contains query
+        /// - 50: Alias contains query
+        /// - 40: Tag exact match
+        /// - 30: Description contains query
+        /// </remarks>
         public IReadOnlyList<DocEntry> Search(string query, int maxResults = 10)
         {
             if (string.IsNullOrEmpty(query) || maxResults <= 0)
@@ -224,28 +236,40 @@ namespace KSPCapcom.KosDocs
             foreach (var entry in _entries)
             {
                 int score = 0;
+                var lowerId = entry.Id?.ToLowerInvariant();
+                var lowerName = entry.Name?.ToLowerInvariant();
 
                 // Exact ID match (highest priority)
-                if (entry.Id != null && entry.Id.Equals(query, StringComparison.OrdinalIgnoreCase))
+                if (lowerId != null && lowerId == lowerQuery)
                 {
                     score = 100;
                 }
+                // ID starts with query (prefix match)
+                else if (lowerId != null && lowerId.StartsWith(lowerQuery))
+                {
+                    score = 90;
+                }
                 // ID contains query
-                else if (entry.Id != null && entry.Id.ToLowerInvariant().Contains(lowerQuery))
+                else if (lowerId != null && lowerId.Contains(lowerQuery))
                 {
                     score = 80;
                 }
+                // Name starts with query (prefix match)
+                else if (lowerName != null && lowerName.StartsWith(lowerQuery))
+                {
+                    score = 75;
+                }
                 // Exact name match
-                else if (entry.Name != null && entry.Name.Equals(query, StringComparison.OrdinalIgnoreCase))
+                else if (lowerName != null && lowerName == lowerQuery)
                 {
                     score = 70;
                 }
                 // Name contains query
-                else if (entry.Name != null && entry.Name.ToLowerInvariant().Contains(lowerQuery))
+                else if (lowerName != null && lowerName.Contains(lowerQuery))
                 {
                     score = 60;
                 }
-                // Alias match
+                // Alias contains query
                 else if (entry.Aliases != null)
                 {
                     foreach (var alias in entry.Aliases)
@@ -258,7 +282,20 @@ namespace KSPCapcom.KosDocs
                     }
                 }
 
-                // Description contains query (lower priority)
+                // Tag exact match (check independently if no match yet)
+                if (score == 0 && entry.Tags != null)
+                {
+                    foreach (var tag in entry.Tags)
+                    {
+                        if (tag != null && tag.Equals(query, StringComparison.OrdinalIgnoreCase))
+                        {
+                            score = 40;
+                            break;
+                        }
+                    }
+                }
+
+                // Description contains query (lowest priority)
                 if (score == 0 && entry.Description != null &&
                     entry.Description.ToLowerInvariant().Contains(lowerQuery))
                 {

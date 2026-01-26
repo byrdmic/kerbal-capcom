@@ -21,6 +21,8 @@ namespace KSPCapcom.LLM.OpenAI
         public float? Temperature { get; set; }
         public int? MaxTokens { get; set; }
         public bool Stream { get; set; }
+        public List<ToolDefinition> Tools { get; set; }
+        public string ToolChoice { get; set; }
 
         /// <summary>
         /// Serialize this request to JSON.
@@ -55,6 +57,22 @@ namespace KSPCapcom.LLM.OpenAI
                 sb.Append(",\"stream\":true");
             }
 
+            if (Tools != null && Tools.Count > 0)
+            {
+                sb.Append(",\"tools\":[");
+                for (int i = 0; i < Tools.Count; i++)
+                {
+                    if (i > 0) sb.Append(",");
+                    sb.Append(Tools[i].ToJson());
+                }
+                sb.Append("]");
+
+                if (!string.IsNullOrEmpty(ToolChoice))
+                {
+                    sb.Append($",\"tool_choice\":\"{JsonEscape(ToolChoice)}\"");
+                }
+            }
+
             sb.Append("}");
             return sb.ToString();
         }
@@ -78,6 +96,9 @@ namespace KSPCapcom.LLM.OpenAI
     {
         public string Role { get; set; }
         public string Content { get; set; }
+        public List<ToolCall> ToolCalls { get; set; }
+        public string ToolCallId { get; set; }
+        public string Name { get; set; }
 
         public ChatMessageDto() { }
 
@@ -89,7 +110,62 @@ namespace KSPCapcom.LLM.OpenAI
 
         public string ToJson()
         {
-            return $"{{\"role\":\"{JsonEscape(Role)}\",\"content\":\"{JsonEscape(Content)}\"}}";
+            var sb = new StringBuilder();
+            sb.Append("{");
+            sb.Append($"\"role\":\"{JsonEscape(Role)}\"");
+
+            // For tool role, content can be null but tool_call_id is required
+            if (Role == "tool")
+            {
+                if (!string.IsNullOrEmpty(ToolCallId))
+                {
+                    sb.Append($",\"tool_call_id\":\"{JsonEscape(ToolCallId)}\"");
+                }
+                sb.Append($",\"content\":\"{JsonEscape(Content ?? "")}\"");
+            }
+            else if (ToolCalls != null && ToolCalls.Count > 0)
+            {
+                // Assistant message with tool_calls - content may be null
+                if (Content != null)
+                {
+                    sb.Append($",\"content\":\"{JsonEscape(Content)}\"");
+                }
+                else
+                {
+                    sb.Append(",\"content\":null");
+                }
+                sb.Append(",\"tool_calls\":[");
+                for (int i = 0; i < ToolCalls.Count; i++)
+                {
+                    if (i > 0) sb.Append(",");
+                    sb.Append(SerializeToolCall(ToolCalls[i]));
+                }
+                sb.Append("]");
+            }
+            else
+            {
+                sb.Append($",\"content\":\"{JsonEscape(Content)}\"");
+            }
+
+            sb.Append("}");
+            return sb.ToString();
+        }
+
+        private static string SerializeToolCall(ToolCall call)
+        {
+            var sb = new StringBuilder();
+            sb.Append("{");
+            sb.Append($"\"id\":\"{JsonEscape(call.Id)}\"");
+            sb.Append($",\"type\":\"{JsonEscape(call.Type ?? "function")}\"");
+            if (call.Function != null)
+            {
+                sb.Append(",\"function\":{");
+                sb.Append($"\"name\":\"{JsonEscape(call.Function.Name)}\"");
+                sb.Append($",\"arguments\":\"{JsonEscape(call.Function.Arguments)}\"");
+                sb.Append("}");
+            }
+            sb.Append("}");
+            return sb.ToString();
         }
 
         private static string JsonEscape(string value)
@@ -113,6 +189,7 @@ namespace KSPCapcom.LLM.OpenAI
                 case MessageRole.User: return "user";
                 case MessageRole.Assistant: return "assistant";
                 case MessageRole.System: return "system";
+                case MessageRole.Tool: return "tool";
                 default: return "user";
             }
         }
@@ -152,6 +229,7 @@ namespace KSPCapcom.LLM.OpenAI
         public int Index { get; set; }
         public ChatMessageDto Message { get; set; }
         public string FinishReason { get; set; }
+        public List<ToolCall> ToolCalls { get; set; }
     }
 
     /// <summary>
@@ -185,6 +263,193 @@ namespace KSPCapcom.LLM.OpenAI
         public string Message { get; set; }
         public string Type { get; set; }
         public string Code { get; set; }
+    }
+
+    #endregion
+
+    #region Tool DTOs
+
+    /// <summary>
+    /// A tool definition for function calling.
+    /// </summary>
+    public class ToolDefinition
+    {
+        public string Type { get; set; } = "function";
+        public FunctionDefinition Function { get; set; }
+
+        public string ToJson()
+        {
+            var sb = new StringBuilder();
+            sb.Append("{");
+            sb.Append($"\"type\":\"{JsonEscape(Type)}\"");
+            if (Function != null)
+            {
+                sb.Append(",\"function\":");
+                sb.Append(Function.ToJson());
+            }
+            sb.Append("}");
+            return sb.ToString();
+        }
+
+        private static string JsonEscape(string value)
+        {
+            if (string.IsNullOrEmpty(value)) return "";
+            return value
+                .Replace("\\", "\\\\")
+                .Replace("\"", "\\\"")
+                .Replace("\n", "\\n")
+                .Replace("\r", "\\r")
+                .Replace("\t", "\\t");
+        }
+    }
+
+    /// <summary>
+    /// Function definition for a tool.
+    /// </summary>
+    public class FunctionDefinition
+    {
+        public string Name { get; set; }
+        public string Description { get; set; }
+        public FunctionParameters Parameters { get; set; }
+
+        public string ToJson()
+        {
+            var sb = new StringBuilder();
+            sb.Append("{");
+            sb.Append($"\"name\":\"{JsonEscape(Name)}\"");
+
+            if (!string.IsNullOrEmpty(Description))
+            {
+                sb.Append($",\"description\":\"{JsonEscape(Description)}\"");
+            }
+
+            if (Parameters != null)
+            {
+                sb.Append(",\"parameters\":");
+                sb.Append(Parameters.ToJson());
+            }
+
+            sb.Append("}");
+            return sb.ToString();
+        }
+
+        private static string JsonEscape(string value)
+        {
+            if (string.IsNullOrEmpty(value)) return "";
+            return value
+                .Replace("\\", "\\\\")
+                .Replace("\"", "\\\"")
+                .Replace("\n", "\\n")
+                .Replace("\r", "\\r")
+                .Replace("\t", "\\t");
+        }
+    }
+
+    /// <summary>
+    /// Parameters schema for a function.
+    /// </summary>
+    public class FunctionParameters
+    {
+        public string Type { get; set; } = "object";
+        public Dictionary<string, ParameterProperty> Properties { get; set; } = new Dictionary<string, ParameterProperty>();
+        public List<string> Required { get; set; } = new List<string>();
+
+        public string ToJson()
+        {
+            var sb = new StringBuilder();
+            sb.Append("{");
+            sb.Append($"\"type\":\"{JsonEscape(Type)}\"");
+
+            sb.Append(",\"properties\":{");
+            bool first = true;
+            foreach (var kvp in Properties)
+            {
+                if (!first) sb.Append(",");
+                first = false;
+                sb.Append($"\"{JsonEscape(kvp.Key)}\":");
+                sb.Append(kvp.Value.ToJson());
+            }
+            sb.Append("}");
+
+            if (Required.Count > 0)
+            {
+                sb.Append(",\"required\":[");
+                for (int i = 0; i < Required.Count; i++)
+                {
+                    if (i > 0) sb.Append(",");
+                    sb.Append($"\"{JsonEscape(Required[i])}\"");
+                }
+                sb.Append("]");
+            }
+
+            sb.Append("}");
+            return sb.ToString();
+        }
+
+        private static string JsonEscape(string value)
+        {
+            if (string.IsNullOrEmpty(value)) return "";
+            return value
+                .Replace("\\", "\\\\")
+                .Replace("\"", "\\\"")
+                .Replace("\n", "\\n")
+                .Replace("\r", "\\r")
+                .Replace("\t", "\\t");
+        }
+    }
+
+    /// <summary>
+    /// A single parameter property definition.
+    /// </summary>
+    public class ParameterProperty
+    {
+        public string Type { get; set; }
+        public string Description { get; set; }
+
+        public string ToJson()
+        {
+            var sb = new StringBuilder();
+            sb.Append("{");
+            sb.Append($"\"type\":\"{JsonEscape(Type)}\"");
+
+            if (!string.IsNullOrEmpty(Description))
+            {
+                sb.Append($",\"description\":\"{JsonEscape(Description)}\"");
+            }
+
+            sb.Append("}");
+            return sb.ToString();
+        }
+
+        private static string JsonEscape(string value)
+        {
+            if (string.IsNullOrEmpty(value)) return "";
+            return value
+                .Replace("\\", "\\\\")
+                .Replace("\"", "\\\"")
+                .Replace("\n", "\\n")
+                .Replace("\r", "\\r")
+                .Replace("\t", "\\t");
+        }
+    }
+
+    /// <summary>
+    /// A tool call requested by the model.
+    /// </summary>
+    public class ToolCall
+    {
+        public string Id { get; set; }
+        public string Type { get; set; }
+        public FunctionCall Function { get; set; }
+    }
+
+    /// <summary>
+    /// A function call within a tool call.
+    /// </summary>
+    public class FunctionCall
+    {
+        public string Name { get; set; }
+        public string Arguments { get; set; }
     }
 
     #endregion
@@ -292,9 +557,92 @@ namespace KSPCapcom.LLM.OpenAI
                     Role = ExtractStringValue(messageJson, "role"),
                     Content = ExtractStringValue(messageJson, "content")
                 };
+
+                // Parse tool_calls if present
+                var toolCallsJson = ExtractArrayValue(messageJson, "tool_calls");
+                if (!string.IsNullOrEmpty(toolCallsJson))
+                {
+                    choice.ToolCalls = ParseToolCalls(toolCallsJson);
+                    choice.Message.ToolCalls = choice.ToolCalls;
+                }
             }
 
             return choice;
+        }
+
+        private static List<ToolCall> ParseToolCalls(string toolCallsJson)
+        {
+            var toolCalls = new List<ToolCall>();
+
+            int depth = 0;
+            int objectStart = -1;
+            bool inString = false;
+
+            for (int i = 0; i < toolCallsJson.Length; i++)
+            {
+                char c = toolCallsJson[i];
+
+                if (inString)
+                {
+                    if (c == '\\' && i + 1 < toolCallsJson.Length)
+                    {
+                        i++; // Skip escaped character
+                        continue;
+                    }
+                    if (c == '"')
+                    {
+                        inString = false;
+                    }
+                    continue;
+                }
+
+                if (c == '"')
+                {
+                    inString = true;
+                }
+                else if (c == '{')
+                {
+                    if (depth == 0) objectStart = i;
+                    depth++;
+                }
+                else if (c == '}')
+                {
+                    depth--;
+                    if (depth == 0 && objectStart >= 0)
+                    {
+                        var objectJson = toolCallsJson.Substring(objectStart, i - objectStart + 1);
+                        var toolCall = ParseToolCall(objectJson);
+                        if (toolCall != null)
+                        {
+                            toolCalls.Add(toolCall);
+                        }
+                        objectStart = -1;
+                    }
+                }
+            }
+
+            return toolCalls;
+        }
+
+        private static ToolCall ParseToolCall(string json)
+        {
+            var toolCall = new ToolCall
+            {
+                Id = ExtractStringValue(json, "id"),
+                Type = ExtractStringValue(json, "type") ?? "function"
+            };
+
+            var functionJson = ExtractObjectValue(json, "function");
+            if (!string.IsNullOrEmpty(functionJson))
+            {
+                toolCall.Function = new FunctionCall
+                {
+                    Name = ExtractStringValue(functionJson, "name"),
+                    Arguments = ExtractStringValue(functionJson, "arguments")
+                };
+            }
+
+            return toolCall;
         }
 
         private static UsageDto ParseUsage(string json)

@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using KSPCapcom;
+using KSPCapcom.KosDocs;
 using KSPCapcom.LLM;
+using KSPCapcom.LLM.OpenAI;
 
 namespace KSPCapcom.Responders
 {
@@ -13,6 +15,11 @@ namespace KSPCapcom.Responders
     /// </summary>
     public class LLMResponder : AsyncResponderBase
     {
+        /// <summary>
+        /// Maximum number of tool call iterations to prevent infinite loops.
+        /// </summary>
+        private const int MaxToolIterations = 40;
+
         private readonly ILLMConnector _connector;
         private readonly PromptBuilder _promptBuilder;
         private readonly LLMRequestOptions _baseOptions;
@@ -58,44 +65,130 @@ namespace KSPCapcom.Responders
             var options = _baseOptions.Clone();
             options.SystemPrompt = _promptBuilder.BuildSystemPrompt();
 
+            // Add kOS documentation search tool if service is ready
+            if (KosDocService.Instance.IsReady)
+            {
+                options.Tools = BuildToolDefinitions();
+                options.ToolChoice = "auto";
+            }
+
             // Log prompt version and mode for debugging
             CapcomCore.Log($"LLMResponder: Using prompt v{PromptBuilder.PromptVersion}, mode={_promptBuilder.GetCurrentMode()}");
 
-            // Check if streaming should be used
-            bool useStreaming = options.EnableStreaming
-                && onStreamChunk != null
-                && _connector is ILLMStreamingConnector streamingConnector
-                && streamingConnector.SupportsStreaming;
+            // Tool call handling loop
+            int iteration = 0;
+            LLMResponse response = null;
 
-            LLMResponse response;
-
-            if (useStreaming)
+            while (iteration < MaxToolIterations)
             {
-                // Use streaming with thread-safe callback marshalling
-                var streamingConn = (ILLMStreamingConnector)_connector;
+                iteration++;
 
-                // Wrap callback to marshal to main thread
-                Action<string> threadSafeChunk = (chunk) =>
+                // Check for cancellation
+                if (cancellationToken.IsCancellationRequested)
                 {
-                    MainThreadDispatcher.Instance.Enqueue(() => onStreamChunk(chunk));
-                };
+                    return ResponderResult.Fail("Request cancelled");
+                }
 
-                response = await streamingConn.SendChatStreamingAsync(messages, options, threadSafeChunk, cancellationToken);
+                // Check if streaming should be used (disabled for tool calls after first iteration)
+                bool useStreaming = iteration == 1
+                    && options.EnableStreaming
+                    && onStreamChunk != null
+                    && _connector is ILLMStreamingConnector streamingConnector
+                    && streamingConnector.SupportsStreaming;
+
+                if (useStreaming)
+                {
+                    // Use streaming with thread-safe callback marshalling
+                    var streamingConn = (ILLMStreamingConnector)_connector;
+
+                    // Wrap callback to marshal to main thread
+                    Action<string> threadSafeChunk = (chunk) =>
+                    {
+                        MainThreadDispatcher.Instance.Enqueue(() => onStreamChunk(chunk));
+                    };
+
+                    response = await streamingConn.SendChatStreamingAsync(messages, options, threadSafeChunk, cancellationToken);
+                }
+                else
+                {
+                    // Use non-streaming request
+                    response = await _connector.SendChatAsync(messages, options, cancellationToken);
+                }
+
+                // Check for errors
+                if (!response.Success)
+                {
+                    return ResponderResult.Fail(GetUserFriendlyError(response.Error));
+                }
+
+                // Check if we have tool calls to process
+                if (!response.HasToolCalls)
+                {
+                    // Final response - return to user
+                    return ResponderResult.Ok(response.Content);
+                }
+
+                // Process tool calls
+                CapcomCore.Log($"LLMResponder: Processing {response.ToolCalls.Count} tool call(s), iteration {iteration}");
+
+                // Add assistant message with tool calls
+                messages.Add(LLMMessage.AssistantWithToolCalls(response.Content, response.ToolCalls));
+
+                // Execute each tool call and add results
+                foreach (var toolCall in response.ToolCalls)
+                {
+                    if (toolCall?.Function == null)
+                    {
+                        continue;
+                    }
+
+                    var result = ToolCallHandler.Execute(toolCall.Function.Name, toolCall.Function.Arguments);
+                    messages.Add(LLMMessage.ToolResponse(toolCall.Id, result, toolCall.Function.Name));
+                }
             }
-            else
+
+            // Max iterations reached - return last available response
+            CapcomCore.LogWarning($"LLMResponder: Max tool iterations ({MaxToolIterations}) reached");
+            return ResponderResult.Ok(response?.Content ?? "");
+        }
+
+        /// <summary>
+        /// Build the list of available tools for the LLM.
+        /// </summary>
+        private List<ToolDefinition> BuildToolDefinitions()
+        {
+            var tools = new List<ToolDefinition>();
+
+            // Add kOS documentation search tool
+            tools.Add(new ToolDefinition
             {
-                // Use non-streaming request
-                response = await _connector.SendChatAsync(messages, options, cancellationToken);
-            }
+                Type = "function",
+                Function = new FunctionDefinition
+                {
+                    Name = KosDocTool.ToolName,
+                    Description = "Search the kOS scripting language documentation for API references, including structures, suffixes, functions, and commands. Use this to verify correct kOS syntax before generating scripts.",
+                    Parameters = new FunctionParameters
+                    {
+                        Type = "object",
+                        Properties = new Dictionary<string, ParameterProperty>
+                        {
+                            ["query"] = new ParameterProperty
+                            {
+                                Type = "string",
+                                Description = "Search query for kOS documentation. Can be an identifier like 'SHIP:VELOCITY' or 'ALTITUDE', or a natural language query like 'how to get orbit parameters'."
+                            },
+                            ["max_results"] = new ParameterProperty
+                            {
+                                Type = "integer",
+                                Description = "Maximum number of results to return (1-10). Default is 5."
+                            }
+                        },
+                        Required = new List<string> { "query" }
+                    }
+                }
+            });
 
-            // Convert response to ResponderResult
-            if (response.Success)
-            {
-                return ResponderResult.Ok(response.Content);
-            }
-
-            // Map error to user-friendly message
-            return ResponderResult.Fail(GetUserFriendlyError(response.Error));
+            return tools;
         }
 
         /// <summary>

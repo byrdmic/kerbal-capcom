@@ -30,7 +30,10 @@
     <Compile Include="..\KSPCapcom\KosDocs\DocEntry.cs" Link="KosDocs\DocEntry.cs" />
     <Compile Include="..\KSPCapcom\KosDocs\KosDocIndex.cs" Link="KosDocs\KosDocIndex.cs" />
     <Compile Include="..\KSPCapcom\KosDocs\KosDocLoader.cs" Link="KosDocs\KosDocLoader.cs" />
+    <Compile Include="..\KSPCapcom\KosDocs\KosDocSearchResult.cs" Link="KosDocs\KosDocSearchResult.cs" />
     <Compile Include="..\KSPCapcom\KosDocs\KosDocService.cs" Link="KosDocs\KosDocService.cs" />
+    <Compile Include="..\KSPCapcom\KosDocs\KosDocTool.cs" Link="KosDocs\KosDocTool.cs" />
+    <Compile Include="..\KSPCapcom\LLM\OpenAI\OpenAIModels.cs" Link="LLM\OpenAI\OpenAIModels.cs" />
   </ItemGroup>
 
 </Project>

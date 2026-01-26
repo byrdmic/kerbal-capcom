@@ -1,3 +1,6 @@
+using System.Collections.Generic;
+using KSPCapcom.LLM.OpenAI;
+
 namespace KSPCapcom.LLM
 {
     /// <summary>
@@ -32,22 +35,34 @@ namespace KSPCapcom.LLM
         public string Model { get; }
 
         /// <summary>
+        /// Tool calls requested by the model (if finish_reason is "tool_calls").
+        /// </summary>
+        public IReadOnlyList<ToolCall> ToolCalls { get; }
+
+        /// <summary>
         /// Whether this response represents a cancelled request.
         /// </summary>
         public bool IsCancelled => Error?.Type == LLMErrorType.Cancelled;
+
+        /// <summary>
+        /// Whether this response requests tool calls.
+        /// </summary>
+        public bool HasToolCalls => ToolCalls != null && ToolCalls.Count > 0;
 
         private LLMResponse(
             string content,
             bool success,
             LLMError error,
             LLMUsage usage,
-            string model)
+            string model,
+            IReadOnlyList<ToolCall> toolCalls = null)
         {
             Content = content ?? string.Empty;
             Success = success;
             Error = error ?? LLMError.None;
             Usage = usage ?? LLMUsage.Empty;
             Model = model;
+            ToolCalls = toolCalls;
         }
 
         /// <summary>
@@ -61,6 +76,24 @@ namespace KSPCapcom.LLM
                 error: LLMError.None,
                 usage: usage,
                 model: model);
+        }
+
+        /// <summary>
+        /// Create a successful response with tool calls.
+        /// </summary>
+        public static LLMResponse WithToolCalls(
+            IReadOnlyList<ToolCall> toolCalls,
+            string content = null,
+            LLMUsage usage = null,
+            string model = null)
+        {
+            return new LLMResponse(
+                content: content,
+                success: true,
+                error: LLMError.None,
+                usage: usage,
+                model: model,
+                toolCalls: toolCalls);
         }
 
         /// <summary>
@@ -104,6 +137,11 @@ namespace KSPCapcom.LLM
         {
             if (Success)
             {
+                if (HasToolCalls)
+                {
+                    return $"OK: {ToolCalls.Count} tool call(s)";
+                }
+
                 var preview = Content.Length > 50
                     ? Content.Substring(0, 47) + "..."
                     : Content;

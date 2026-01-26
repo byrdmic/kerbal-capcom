@@ -100,6 +100,7 @@
     <Compile Include="LLM\ErrorMapper.cs" />
     <Compile Include="LLM\RetryingConnector.cs" />
     <Compile Include="LLM\TelemetryConnector.cs" />
+    <Compile Include="LLM\ToolCallHandler.cs" />
     <Compile Include="MainThreadDispatcher.cs" />
     <Compile Include="MessageRole.cs" />
     <Compile Include="PromptBuilder.cs" />
@@ -111,7 +112,9 @@
     <Compile Include="KosDocs\DocEntry.cs" />
     <Compile Include="KosDocs\KosDocIndex.cs" />
     <Compile Include="KosDocs\KosDocLoader.cs" />
+    <Compile Include="KosDocs\KosDocSearchResult.cs" />
     <Compile Include="KosDocs\KosDocService.cs" />
+    <Compile Include="KosDocs\KosDocTool.cs" />
     <Compile Include="SecretStore.cs" />
     <Compile Include="ToolbarButton.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

@@ -1,3 +1,6 @@
+using System.Collections.Generic;
+using KSPCapcom.LLM.OpenAI;
+
 namespace KSPCapcom.LLM
 {
     /// <summary>
@@ -53,6 +56,16 @@ namespace KSPCapcom.LLM
         public bool EnableStreaming { get; set; } = true;
 
         /// <summary>
+        /// Tools available for the model to call.
+        /// </summary>
+        public List<ToolDefinition> Tools { get; set; }
+
+        /// <summary>
+        /// Tool choice mode: "auto", "none", or a specific tool name.
+        /// </summary>
+        public string ToolChoice { get; set; }
+
+        /// <summary>
         /// Create options with default values.
         /// </summary>
         public LLMRequestOptions()
@@ -85,7 +98,9 @@ namespace KSPCapcom.LLM
                 Model = Model,
                 SystemPrompt = SystemPrompt,
                 TimeoutMs = TimeoutMs,
-                EnableStreaming = EnableStreaming
+                EnableStreaming = EnableStreaming,
+                Tools = Tools != null ? new List<ToolDefinition>(Tools) : null,
+                ToolChoice = ToolChoice
             };
         }
     }
