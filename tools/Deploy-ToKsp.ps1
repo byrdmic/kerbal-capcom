@@ -37,3 +37,12 @@ if (Test-Path -LiteralPath $pdb) {
 }
 
 Write-Host ("Deployed to: " + $destPlugins)
+
+# Copy Data folder if it exists (kOS docs, etc.)
+$srcData = Join-Path (Split-Path $TargetPath -Parent) "..\Data"
+if (Test-Path -LiteralPath $srcData) {
+  $destData = Join-Path $KspDir ("GameData\" + $ModName + "\Data")
+  New-Item -ItemType Directory -Force -Path $destData | Out-Null
+  Copy-Item -Recurse -Force -LiteralPath "$srcData\*" -Destination $destData
+  Write-Host ("Deployed Data folder to: " + $destData)
+}

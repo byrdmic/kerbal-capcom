@@ -21,6 +21,7 @@ Quick validation that the mod builds, deploys, and runs. Run after every meaning
 | 1.1 | Build solution (Debug) | Build succeeds with 0 errors | Build errors in Output window |
 | 1.2 | Check `deploy\GameData\KSPCapcom\Plugins\KSPCapcom.dll` exists | File present, timestamp matches build time | File missing or stale |
 | 1.3 | (Copy deploy only) Run `.\tools\Deploy-ToKsp.ps1 -TargetPath ".\deploy\GameData\KSPCapcom\Plugins\KSPCapcom.dll" -Clean` | "Deployed to:" message appears | Script throws error |
+| 1.4 | Check `deploy\GameData\KSPCapcom\Data\kos_docs.json` exists | File present, >100KB | File missing or empty |
 
 ---
 
