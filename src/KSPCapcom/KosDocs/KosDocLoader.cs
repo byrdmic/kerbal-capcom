@@ -58,13 +58,14 @@ namespace KSPCapcom.KosDocs
         }
 
         /// <summary>
-        /// Get the default path to the docs file (same folder as DLL).
+        /// Get the default path to the docs file (Data folder, sibling to Plugins).
         /// </summary>
         private static string GetDefaultFilePath()
         {
             var assemblyPath = System.Reflection.Assembly.GetExecutingAssembly().Location;
-            var assemblyDir = Path.GetDirectoryName(assemblyPath);
-            return Path.Combine(assemblyDir, DOCS_FILENAME);
+            var pluginsDir = Path.GetDirectoryName(assemblyPath);
+            var modDir = Path.GetDirectoryName(pluginsDir);  // Go up from Plugins to KSPCapcom
+            return Path.Combine(modDir, "Data", DOCS_FILENAME);
         }
 
         /// <summary>
@@ -95,7 +96,7 @@ namespace KSPCapcom.KosDocs
                 }
 
                 _index = index;
-                CapcomCore.Log($"KosDocLoader: Loaded {_index.Count} entries (content version {_index.ContentVersion})");
+                CapcomCore.Log($"KosDocLoader: Loaded {_index.Count} entries from {_docsFilePath} (content version {_index.ContentVersion})");
                 return true;
             }
             catch (Exception ex)
@@ -170,7 +171,7 @@ namespace KSPCapcom.KosDocs
                     if (finalSuccess && finalIndex != null)
                     {
                         _index = finalIndex;
-                        CapcomCore.Log($"KosDocLoader: Loaded {_index.Count} entries (content version {_index.ContentVersion})");
+                        CapcomCore.Log($"KosDocLoader: Loaded {_index.Count} entries from {_docsFilePath} (content version {_index.ContentVersion})");
                     }
 
                     onComplete?.Invoke(finalSuccess);
