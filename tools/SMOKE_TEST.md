@@ -106,6 +106,41 @@ Manual verification of error message mapping. These tests verify that transport 
 
 ---
 
+## 7. kOS Documentation Retrieval (VS10)
+
+In-game validation that the `search_kos_docs` tool returns grounded snippets instead of hallucinated API responses.
+
+| Step | Action | Pass | Fail |
+|------|--------|------|------|
+| 7.1 | Open chat panel in VAB or Flight | Window opens | - |
+| 7.2 | Ask "How do I get ship velocity in kOS?" | Response mentions `SHIP:VELOCITY` or `VELOCITY` suffix | Generic/hallucinated API |
+| 7.3 | Ask "What's the kOS command to pause execution?" | Response mentions `WAIT` command | Incorrect or made-up command |
+| 7.4 | Ask "How do I lock steering in kOS?" | Response mentions `LOCK STEERING TO` syntax | - |
+| 7.5 | Check `KSP.log` for telemetry lines | See `TELEM|SEARCH|query=` lines | No telemetry = tool not called |
+
+**Telemetry verification:**
+Search the KSP.log for lines like:
+```
+[KSPCapcom] TELEM|SEARCH|query=velocity|topN=5|ms=X|results=Y
+```
+
+The presence of these lines confirms:
+- The `search_kos_docs` tool was invoked
+- Query was processed
+- Results were returned to the LLM
+
+**What to look for in responses:**
+- Responses should use correct kOS syntax (e.g., `SHIP:VELOCITY`, not `ship.velocity`)
+- Code snippets should end with periods (kOS statement terminator)
+- References to official kOS documentation are a good sign
+
+**Common failure modes:**
+- LLM ignores tool and hallucinates → Check if tool is registered in CapcomCore
+- Tool called but no results → Check if `kos_docs.json` exists in `Data/` folder
+- Wrong results → Check scoring/ranking algorithm
+
+---
+
 ## Quick Pass Summary
 
 After completing all steps, check:
