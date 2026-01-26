@@ -329,6 +329,10 @@ namespace KSPCapcom.KosDocs
             entry.Aliases = ExtractStringArray(json, "aliases");
             entry.Related = ExtractStringArray(json, "related");
 
+            // Parse new metadata fields (schema 1.1.0+)
+            entry.Category = ExtractStringValue(json, "category");
+            entry.UsageFrequency = ExtractStringValue(json, "usageFrequency");
+
             // Validate required fields
             if (string.IsNullOrEmpty(entry.Id) || string.IsNullOrEmpty(entry.Name))
             {

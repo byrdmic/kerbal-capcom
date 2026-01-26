@@ -20,6 +20,13 @@ from .postprocess import (
     infer_additional_tags,
     build_tag_index,
     validate_entries,
+    assign_domain_tags,
+    assign_categories,
+    assign_usage_frequency,
+    validate_cross_references,
+    validate_tag_coverage,
+    validate_metadata_completeness,
+    build_enhanced_tag_index,
 )
 from .output import create_index, write_json, generate_summary
 from .config import BASE_URL
@@ -163,11 +170,38 @@ def main():
     print("  Inferring additional tags...")
     infer_additional_tags(all_entries)
 
-    print("  Building tag index...")
-    tags = build_tag_index(all_entries)
+    print("  Assigning domain tags...")
+    assign_domain_tags(all_entries)
+
+    print("  Assigning categories...")
+    assign_categories(all_entries)
+
+    print("  Assigning usage frequency...")
+    assign_usage_frequency(all_entries)
+
+    print("  Validating cross-references...")
+    xref_errors, xref_warnings = validate_cross_references(all_entries)
+    if xref_errors:
+        all_errors.extend(xref_errors)
+    if xref_warnings and args.verbose:
+        for w in xref_warnings[:10]:
+            print(f"    Warning: {w}")
+
+    print("  Validating tag coverage...")
+    insufficient_tags = validate_tag_coverage(all_entries)
+    if insufficient_tags and args.verbose:
+        print(f"    {len(insufficient_tags)} entries with insufficient tags")
+
+    print("  Building enhanced tag index...")
+    tags = build_enhanced_tag_index(all_entries)
 
     print("  Validating entries...")
     warnings = validate_entries(all_entries)
+
+    print("  Checking metadata completeness...")
+    missing_counts = validate_metadata_completeness(all_entries)
+    if args.verbose:
+        print(f"    Missing: {missing_counts}")
 
     print()
 

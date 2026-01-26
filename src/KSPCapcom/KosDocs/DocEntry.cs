@@ -109,6 +109,18 @@ namespace KSPCapcom.KosDocs
         public string DeprecationNote { get; set; }
 
         /// <summary>
+        /// Category grouping (e.g., "Vessel Properties", "Orbital Mechanics").
+        /// Used for organizing retrieval results.
+        /// </summary>
+        public string Category { get; set; }
+
+        /// <summary>
+        /// Usage frequency hint: "common", "moderate", or "rare".
+        /// Helps prioritize retrieval results.
+        /// </summary>
+        public string UsageFrequency { get; set; }
+
+        /// <summary>
         /// Create an empty DocEntry.
         /// </summary>
         public DocEntry()

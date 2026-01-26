@@ -24,7 +24,9 @@ CACHE_DIR = ".cache"
 CACHE_EXPIRY_HOURS = 24
 
 # Output schema version (must match C# SUPPORTED_SCHEMA_MAJOR)
-SCHEMA_VERSION = "1.0.0"
+# 1.0.0 - Initial schema
+# 1.1.0 - Added category, usageFrequency fields; enhanced tag taxonomy
+SCHEMA_VERSION = "1.1.0"
 
 # kOS version we're documenting
 KOS_VERSION = "1.4.0.0"

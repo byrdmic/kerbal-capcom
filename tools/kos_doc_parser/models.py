@@ -46,6 +46,8 @@ class DocEntry:
     related: List[str] = field(default_factory=list)
     deprecated: bool = False
     deprecation_note: Optional[str] = None
+    category: Optional[str] = None
+    usage_frequency: Optional[str] = None  # "common", "moderate", or "rare"
 
     def to_dict(self) -> dict:
         """Convert to JSON-serializable dictionary matching C# property names."""
@@ -104,6 +106,12 @@ class DocEntry:
             result["deprecated"] = self.deprecated
             if self.deprecation_note:
                 result["deprecationNote"] = self.deprecation_note
+
+        if self.category:
+            result["category"] = self.category
+
+        if self.usage_frequency:
+            result["usageFrequency"] = self.usage_frequency
 
         return result
 

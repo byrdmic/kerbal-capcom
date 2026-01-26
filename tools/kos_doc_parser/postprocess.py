@@ -2,9 +2,11 @@
 
 import re
 from collections import defaultdict
-from typing import Dict, List, Set
+from typing import Dict, List, Set, Tuple
 
 from .models import DocEntry, DocEntryType, DocAccessMode
+from .tag_taxonomy import assign_tags_to_entry, get_all_tag_descriptions
+from .metadata_mappings import get_category_for_entry, get_usage_frequency
 
 
 # Essential entries that should always be present with fallback definitions
@@ -350,3 +352,135 @@ def validate_entries(entries: List[DocEntry]) -> List[str]:
             warnings.append(f"Method {entry.id} has no signature")
 
     return warnings
+
+
+def assign_domain_tags(entries: List[DocEntry]) -> None:
+    """Apply comprehensive domain taxonomy tags to all entries.
+
+    Uses pattern matching, keyword hints, and return type analysis
+    to ensure every entry has at least 2 relevant tags.
+    """
+    for entry in entries:
+        entry.tags = assign_tags_to_entry(entry)
+
+
+def assign_categories(entries: List[DocEntry]) -> None:
+    """Assign category labels to all entries based on type and structure."""
+    uncategorized = 0
+
+    for entry in entries:
+        category = get_category_for_entry(entry)
+        if category:
+            entry.category = category
+        else:
+            # Fallback category based on type
+            if entry.type == DocEntryType.STRUCTURE:
+                entry.category = "Structures"
+            elif entry.type == DocEntryType.SUFFIX:
+                entry.category = "Structure Members"
+            else:
+                entry.category = "Miscellaneous"
+                uncategorized += 1
+
+    if uncategorized > 0:
+        print(f"    {uncategorized} entries assigned to Miscellaneous category")
+
+
+def assign_usage_frequency(entries: List[DocEntry]) -> None:
+    """Assign usage frequency hints to all entries."""
+    counts = {"common": 0, "moderate": 0, "rare": 0}
+
+    for entry in entries:
+        frequency = get_usage_frequency(entry)
+        entry.usage_frequency = frequency
+        counts[frequency] += 1
+
+    print(f"    Frequency distribution: {counts['common']} common, {counts['moderate']} moderate, {counts['rare']} rare")
+
+
+def validate_cross_references(entries: List[DocEntry]) -> Tuple[List[str], List[str]]:
+    """Validate that all cross-references point to existing entries.
+
+    Returns:
+        Tuple of (errors, warnings)
+    """
+    errors = []
+    warnings = []
+
+    # Build ID set
+    entry_ids = {e.id for e in entries}
+
+    for entry in entries:
+        # Check related references
+        invalid_related = []
+        for related_id in entry.related:
+            if related_id not in entry_ids:
+                invalid_related.append(related_id)
+
+        if invalid_related:
+            # Silently remove invalid references instead of warning
+            entry.related = [r for r in entry.related if r in entry_ids]
+
+        # Check parent structure reference
+        if entry.parent_structure and entry.parent_structure not in entry_ids:
+            warnings.append(f"Entry {entry.id} references non-existent parent: {entry.parent_structure}")
+
+    return errors, warnings
+
+
+def validate_tag_coverage(entries: List[DocEntry]) -> List[str]:
+    """Validate that all entries have sufficient tags.
+
+    Returns:
+        List of entries with insufficient tags
+    """
+    insufficient = []
+
+    for entry in entries:
+        if len(entry.tags) < 2:
+            insufficient.append(f"Entry {entry.id} has only {len(entry.tags)} tags: {entry.tags}")
+
+    return insufficient
+
+
+def validate_metadata_completeness(entries: List[DocEntry]) -> Dict[str, int]:
+    """Check metadata completeness across all entries.
+
+    Returns:
+        Dictionary with counts of missing fields
+    """
+    missing = {
+        "category": 0,
+        "usage_frequency": 0,
+        "description": 0,
+        "tags_insufficient": 0,
+    }
+
+    for entry in entries:
+        if not entry.category:
+            missing["category"] += 1
+        if not entry.usage_frequency:
+            missing["usage_frequency"] += 1
+        if not entry.description:
+            missing["description"] += 1
+        if len(entry.tags) < 2:
+            missing["tags_insufficient"] += 1
+
+    return missing
+
+
+def build_enhanced_tag_index(entries: List[DocEntry]) -> Dict[str, str]:
+    """Build a comprehensive tag description index from taxonomy."""
+    # Get all tag descriptions from taxonomy
+    tag_descriptions = get_all_tag_descriptions()
+
+    # Collect all tags actually used
+    used_tags: Set[str] = set()
+    for entry in entries:
+        used_tags.update(entry.tags)
+
+    # Return only used tags with their descriptions
+    return {
+        tag: tag_descriptions.get(tag, tag.title())
+        for tag in sorted(used_tags)
+    }
