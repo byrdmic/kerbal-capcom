@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 
 namespace KSPCapcom.KosDocs
 {
@@ -54,23 +55,27 @@ namespace KSPCapcom.KosDocs
         /// <returns>Search result containing entries or error.</returns>
         public KosDocSearchResult Execute(string query, int? maxResults = null)
         {
+            var stopwatch = Stopwatch.StartNew();
+            int limit = maxResults ?? DefaultMaxResults;
+
             try
             {
                 // Validate query
                 if (string.IsNullOrWhiteSpace(query))
                 {
-                    CapcomCore.Log($"[{ToolName}] Search failed: Empty query");
+                    stopwatch.Stop();
+                    CapcomCore.Log($"TELEM|SEARCH|query=|topN={limit}|ms={stopwatch.ElapsedMilliseconds}|results=0|error=empty_query");
                     return KosDocSearchResult.Fail("Query cannot be empty");
                 }
 
                 if (query.Length < MinQueryLength)
                 {
-                    CapcomCore.Log($"[{ToolName}] Search failed: Query too short ({query.Length} chars)");
+                    stopwatch.Stop();
+                    CapcomCore.Log($"TELEM|SEARCH|query={TruncateQuery(query)}|topN={limit}|ms={stopwatch.ElapsedMilliseconds}|results=0|error=query_too_short");
                     return KosDocSearchResult.Fail($"Query must be at least {MinQueryLength} characters");
                 }
 
-                // Validate and clamp maxResults
-                int limit = maxResults ?? DefaultMaxResults;
+                // Clamp limit
                 if (limit < 1)
                 {
                     limit = 1;
@@ -83,21 +88,24 @@ namespace KSPCapcom.KosDocs
                 // Check service readiness
                 if (!_service.IsReady)
                 {
-                    CapcomCore.Log($"[{ToolName}] Search failed: Documentation not loaded");
+                    stopwatch.Stop();
+                    CapcomCore.Log($"TELEM|SEARCH|query={TruncateQuery(query)}|topN={limit}|ms={stopwatch.ElapsedMilliseconds}|results=0|error=docs_not_loaded");
                     return KosDocSearchResult.Fail("Documentation not loaded");
                 }
 
                 // Perform search
-                CapcomCore.Log($"[{ToolName}] Searching for \"{query}\" (max {limit} results)");
                 var entries = _service.Search(query, limit);
+                stopwatch.Stop();
 
-                CapcomCore.Log($"[{ToolName}] Found {entries.Count} matching entries");
+                CapcomCore.Log($"TELEM|SEARCH|query={TruncateQuery(query)}|topN={limit}|ms={stopwatch.ElapsedMilliseconds}|results={entries.Count}");
                 return KosDocSearchResult.FromDocEntries(entries);
             }
             catch (Exception ex)
             {
                 // Never propagate exceptions - return error result
-                CapcomCore.LogError($"[{ToolName}] Search failed: {ex.Message}");
+                stopwatch.Stop();
+                CapcomCore.Log($"TELEM|SEARCH|query={TruncateQuery(query)}|topN={limit}|ms={stopwatch.ElapsedMilliseconds}|results=0|error=exception");
+                CapcomCore.LogError($"[{ToolName}] Search exception: {ex.Message}");
                 return KosDocSearchResult.Fail("Internal error during search");
             }
         }
@@ -266,6 +274,26 @@ namespace KSPCapcom.KosDocs
                 return result;
 
             return null;
+        }
+
+        /// <summary>
+        /// Truncate query string for telemetry logging to avoid logging full user input.
+        /// </summary>
+        /// <param name="query">The query to truncate.</param>
+        /// <param name="maxLen">Maximum length (default 50).</param>
+        /// <returns>Truncated query with ellipsis if needed.</returns>
+        private static string TruncateQuery(string query, int maxLen = 50)
+        {
+            if (string.IsNullOrEmpty(query))
+                return string.Empty;
+
+            // Replace pipe characters to avoid breaking telemetry format
+            var sanitized = query.Replace("|", " ");
+
+            if (sanitized.Length <= maxLen)
+                return sanitized;
+
+            return sanitized.Substring(0, maxLen) + "...";
         }
     }
 }
