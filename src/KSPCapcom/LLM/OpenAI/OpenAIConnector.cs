@@ -15,7 +15,7 @@ namespace KSPCapcom.LLM.OpenAI
     public class OpenAIConnector : ILLMStreamingConnector
     {
         private const string OPENAI_ENDPOINT = "https://api.openai.com/v1/chat/completions";
-        private const string DEFAULT_MODEL = "gpt-4o-mini";
+        private const string DEFAULT_MODEL = "gpt-5.2-2025-12-11";
 
         private readonly Func<string> _getApiKey;
         private readonly Func<string> _getModel;

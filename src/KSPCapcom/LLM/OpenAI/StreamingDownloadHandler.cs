@@ -273,15 +273,34 @@ namespace KSPCapcom.LLM.OpenAI
                 return null;
             }
 
-            // Find matching closing brace for first object
+            // Find matching closing brace for first object, tracking string state
             int depth = 0;
             int objectEnd = -1;
+            bool inString = false;
 
             for (int i = objectStart; i < choicesJson.Length; i++)
             {
                 char c = choicesJson[i];
 
-                if (c == '{')
+                if (inString)
+                {
+                    if (c == '\\' && i + 1 < choicesJson.Length)
+                    {
+                        i++; // Skip escaped character
+                        continue;
+                    }
+                    if (c == '"')
+                    {
+                        inString = false;
+                    }
+                    continue;
+                }
+
+                if (c == '"')
+                {
+                    inString = true;
+                }
+                else if (c == '{')
                 {
                     depth++;
                 }
@@ -327,17 +346,42 @@ namespace KSPCapcom.LLM.OpenAI
             if (string.IsNullOrEmpty(choicesJson))
                 return null;
 
-            // Simple extraction - find the first choice object
+            // Find the first choice object
             int objectStart = choicesJson.IndexOf('{');
             if (objectStart < 0)
                 return null;
 
+            // Find matching closing brace, tracking string state
             int depth = 0;
             int objectEnd = -1;
+            bool inString = false;
+
             for (int i = objectStart; i < choicesJson.Length; i++)
             {
                 char c = choicesJson[i];
-                if (c == '{') depth++;
+
+                if (inString)
+                {
+                    if (c == '\\' && i + 1 < choicesJson.Length)
+                    {
+                        i++; // Skip escaped character
+                        continue;
+                    }
+                    if (c == '"')
+                    {
+                        inString = false;
+                    }
+                    continue;
+                }
+
+                if (c == '"')
+                {
+                    inString = true;
+                }
+                else if (c == '{')
+                {
+                    depth++;
+                }
                 else if (c == '}')
                 {
                     depth--;
@@ -372,12 +416,37 @@ namespace KSPCapcom.LLM.OpenAI
             if (objectStart < 0)
                 return;
 
+            // Find matching closing brace, tracking string state to handle braces inside strings
             int depth = 0;
             int objectEnd = -1;
+            bool inString = false;
+
             for (int i = objectStart; i < choicesJson.Length; i++)
             {
                 char c = choicesJson[i];
-                if (c == '{') depth++;
+
+                if (inString)
+                {
+                    if (c == '\\' && i + 1 < choicesJson.Length)
+                    {
+                        i++; // Skip escaped character
+                        continue;
+                    }
+                    if (c == '"')
+                    {
+                        inString = false;
+                    }
+                    continue;
+                }
+
+                if (c == '"')
+                {
+                    inString = true;
+                }
+                else if (c == '{')
+                {
+                    depth++;
+                }
                 else if (c == '}')
                 {
                     depth--;

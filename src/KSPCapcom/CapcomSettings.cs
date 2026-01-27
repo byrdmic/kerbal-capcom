@@ -22,7 +22,7 @@ namespace KSPCapcom
         /// <summary>
         /// Default model to use for OpenAI API requests.
         /// </summary>
-        public const string DefaultModel = "gpt-5-mini-2025-08-07";
+        public const string DefaultModel = "gpt-5.2-2025-12-11";
 
         /// <summary>
         /// Current operation mode (placeholder - does not affect behavior in M1).
