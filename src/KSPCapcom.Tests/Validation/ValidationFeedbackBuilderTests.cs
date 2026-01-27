@@ -221,7 +221,114 @@ namespace KSPCapcom.Tests.Validation
 
         #endregion
 
+        #region Edge Case Feedback Tests
+
+        [Test]
+        public void Build_NoDocumentationWarning_ReturnsEmpty()
+        {
+            // Arrange - validation with warning but no unverified items
+            var validation = new KosValidationResult();
+            SetWarning(validation, "No documentation was retrieved.");
+
+            // Act
+            var result = ValidationFeedbackBuilder.Build(validation);
+
+            // Assert - warning state with no unverified items returns empty
+            Assert.That(result, Is.Empty);
+        }
+
+        [Test]
+        public void Build_VeryLongIdentifierName_HandlesCorrectly()
+        {
+            // Arrange - 100+ character identifier
+            var longIdentifier = "SHIP:" + new string('A', 100);
+            var validation = new KosValidationResult();
+            AddUnverified(validation, new UnverifiedIdentifier(longIdentifier, 1, new List<string>()));
+
+            // Act
+            var result = ValidationFeedbackBuilder.Build(validation);
+
+            // Assert - should handle without error and include the identifier
+            Assert.That(result, Does.Contain(longIdentifier));
+            Assert.That(result, Does.Contain("Grounded Check Failed"));
+        }
+
+        [Test]
+        public void Build_LongSuggestionNames_IncludesAll()
+        {
+            // Arrange - long suggestion names
+            var suggestions = new List<string>
+            {
+                "VERYLONGSTRUCTURENAME:VERYLONGSUFFIXNAME",
+                "ANOTHERLONGNAME:WITHLONGSUFFIX",
+                "THIRDLONGIDENTIFIER:NAME"
+            };
+            var validation = new KosValidationResult();
+            AddUnverified(validation, new UnverifiedIdentifier("FAKE:ID", 1, suggestions));
+
+            // Act
+            var result = ValidationFeedbackBuilder.Build(validation);
+
+            // Assert - all suggestions should be included
+            Assert.That(result, Does.Contain("VERYLONGSTRUCTURENAME:VERYLONGSUFFIXNAME"));
+            Assert.That(result, Does.Contain("ANOTHERLONGNAME:WITHLONGSUFFIX"));
+            Assert.That(result, Does.Contain("THIRDLONGIDENTIFIER:NAME"));
+        }
+
+        [Test]
+        public void Build_ExactlyMaxUnverified_ShowsAllNoTruncation()
+        {
+            // Arrange - exactly 10 items (MaxUnverifiedToShow)
+            var validation = new KosValidationResult();
+            for (int i = 1; i <= 10; i++)
+            {
+                AddUnverified(validation, new UnverifiedIdentifier($"FAKE:ITEM{i}", i, new List<string>()));
+            }
+
+            // Act
+            var result = ValidationFeedbackBuilder.Build(validation);
+
+            // Assert - all 10 should be shown, no truncation message
+            for (int i = 1; i <= 10; i++)
+            {
+                Assert.That(result, Does.Contain($"`FAKE:ITEM{i}`"));
+            }
+            Assert.That(result, Does.Not.Contain("...and"));
+            Assert.That(result, Does.Not.Contain("more"));
+        }
+
+        [Test]
+        public void Build_OneOverMaxUnverified_ShowsTruncation()
+        {
+            // Arrange - exactly 11 items (one over max)
+            var validation = new KosValidationResult();
+            for (int i = 1; i <= 11; i++)
+            {
+                AddUnverified(validation, new UnverifiedIdentifier($"FAKE:ITEM{i}", i, new List<string>()));
+            }
+
+            // Act
+            var result = ValidationFeedbackBuilder.Build(validation);
+
+            // Assert - first 10 shown, item 11 hidden, "...and 1 more" message
+            for (int i = 1; i <= 10; i++)
+            {
+                Assert.That(result, Does.Contain($"`FAKE:ITEM{i}`"));
+            }
+            Assert.That(result, Does.Not.Contain("`FAKE:ITEM11`"));
+            Assert.That(result, Does.Contain("...and 1 more"));
+        }
+
+        #endregion
+
         #region Helper Methods
+
+        private static void SetWarning(KosValidationResult result, string warning)
+        {
+            var property = typeof(KosValidationResult).GetProperty("Warning",
+                System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public);
+            property?.SetValue(result, warning);
+        }
 
         private static void AddVerified(KosValidationResult result, VerifiedIdentifier verified)
         {

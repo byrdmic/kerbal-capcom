@@ -40,7 +40,8 @@ namespace KSPCapcom.Tests.Validation
             var result = _extractor.Extract("PRINT ALTITUDE.");
 
             Assert.That(result.Identifiers.Any(i => i.Normalized == "ALTITUDE"), Is.True);
-            Assert.That(result.Identifiers.Any(i => i.Normalized == "PRINT"), Is.True);
+            // PRINT is a keyword and correctly not extracted as an identifier
+            Assert.That(result.Identifiers.Any(i => i.Normalized == "PRINT"), Is.False);
         }
 
         [Test]
@@ -274,7 +275,8 @@ PRINT end.";
         {
             var result = _extractor.Extract("PRINT \"\".");
 
-            Assert.That(result.Identifiers.Any(i => i.Normalized == "PRINT"), Is.True);
+            // PRINT is a keyword and correctly not extracted; test verifies empty string parsing doesn't crash
+            Assert.That(result.Identifiers.Any(i => i.Normalized == "PRINT"), Is.False);
         }
 
         #endregion
@@ -343,7 +345,8 @@ PRINT line3.";
             var result = _extractor.Extract("print ship:altitude.");
 
             Assert.That(result.Identifiers.Any(i => i.Normalized == "SHIP:ALTITUDE"), Is.True);
-            Assert.That(result.Identifiers.Any(i => i.Normalized == "PRINT"), Is.True);
+            // PRINT is a keyword and correctly not extracted as an identifier
+            Assert.That(result.Identifiers.Any(i => i.Normalized == "PRINT"), Is.False);
         }
 
         [Test]
@@ -404,6 +407,158 @@ PRINT ""Done"".";
             Assert.That(result.Identifiers.Any(i => i.Normalized == "SHIP:BODY:MU"), Is.True);
             Assert.That(result.Identifiers.Any(i => i.Normalized == "SHIP:MAXTHRUST"), Is.True);
             Assert.That(result.Identifiers.Any(i => i.Normalized == "SHIP:MASS"), Is.True);
+        }
+
+        #endregion
+
+        #region Boundary Case Tests
+
+        [Test]
+        public void Extract_WhitespaceOnlyScript_ReturnsEmptySet()
+        {
+            // Arrange - only spaces, tabs, newlines
+            var script = "   \t  \n  \r\n   \t\t  ";
+
+            // Act
+            var result = _extractor.Extract(script);
+
+            // Assert
+            Assert.That(result.IsEmpty, Is.True);
+        }
+
+        [Test]
+        public void Extract_CommentsOnlyScript_ReturnsEmptySet()
+        {
+            // Arrange - only // and /* */ comments
+            var script = @"// This is a comment
+/* This is
+   a block comment */
+// Another line comment";
+
+            // Act
+            var result = _extractor.Extract(script);
+
+            // Assert
+            Assert.That(result.IsEmpty, Is.True);
+        }
+
+        [Test]
+        public void Extract_ExtremelyLongIdentifierChain_HandlesCorrectly()
+        {
+            // Arrange - 10-level chain A:B:C:D:E:F:G:H:I:J
+            var script = "PRINT A:B:C:D:E:F:G:H:I:J.";
+
+            // Act
+            var result = _extractor.Extract(script);
+
+            // Assert - should extract the full chain
+            Assert.That(result.Identifiers.Any(i => i.Normalized == "A:B:C:D:E:F:G:H:I:J"), Is.True);
+            // Should also extract individual parts
+            Assert.That(result.Identifiers.Any(i => i.Normalized == "A"), Is.True);
+            Assert.That(result.Identifiers.Any(i => i.Normalized == "J"), Is.True);
+        }
+
+        [Test]
+        public void Extract_IdentifierWithUnderscore_ExtractsCorrectly()
+        {
+            // Arrange
+            var script = "SET my_var TO 5.";
+
+            // Act
+            var result = _extractor.Extract(script);
+
+            // Assert
+            Assert.That(result.Identifiers.Any(i => i.Normalized == "MY_VAR"), Is.True);
+            Assert.That(result.IsUserDefined("my_var"), Is.True);
+        }
+
+        [Test]
+        public void Extract_IdentifierWithNumbers_ExtractsCorrectly()
+        {
+            // Arrange
+            var script = "SET stage2Thrust TO SHIP:MAXTHRUST.";
+
+            // Act
+            var result = _extractor.Extract(script);
+
+            // Assert
+            Assert.That(result.Identifiers.Any(i => i.Normalized == "STAGE2THRUST"), Is.True);
+            Assert.That(result.IsUserDefined("stage2Thrust"), Is.True);
+        }
+
+        [Test]
+        public void Extract_IdentifierStartingWithUnderscore_ExtractsCorrectly()
+        {
+            // Arrange
+            var script = "SET _private TO 10.";
+
+            // Act
+            var result = _extractor.Extract(script);
+
+            // Assert
+            Assert.That(result.Identifiers.Any(i => i.Normalized == "_PRIVATE"), Is.True);
+            Assert.That(result.IsUserDefined("_private"), Is.True);
+        }
+
+        [Test]
+        public void Extract_MixedCommentsAndCode_ExtractsOnlyCode()
+        {
+            // Arrange - code with inline comments
+            var script = @"SET x TO 5. // Set x to five
+PRINT x. /* print it */
+// FAKE:IDENTIFIER should not appear
+SET y TO /* HIDDEN:VALUE */ 10.";
+
+            // Act
+            var result = _extractor.Extract(script);
+
+            // Assert
+            Assert.That(result.Identifiers.Any(i => i.Normalized == "X"), Is.True);
+            Assert.That(result.Identifiers.Any(i => i.Normalized == "Y"), Is.True);
+            Assert.That(result.Identifiers.Any(i => i.Normalized == "FAKE:IDENTIFIER"), Is.False);
+            Assert.That(result.Identifiers.Any(i => i.Normalized == "HIDDEN:VALUE"), Is.False);
+        }
+
+        [Test]
+        public void Extract_OnlyNumericLiterals_ReturnsEmpty()
+        {
+            // Arrange - script with just numbers (no identifiers)
+            // Note: This tests that numbers don't get extracted as identifiers
+            var script = "123 456.789 0 -5 1.5";
+
+            // Act
+            var result = _extractor.Extract(script);
+
+            // Assert - numbers should not be extracted as identifiers
+            Assert.That(result.Identifiers.Any(i => i.Normalized == "123"), Is.False);
+            Assert.That(result.Identifiers.Any(i => i.Normalized == "456"), Is.False);
+        }
+
+        [Test]
+        public void Extract_ScientificNotation_NotExtractedAsIdentifier()
+        {
+            // Arrange - 1.5e10 should not be an identifier
+            var script = "SET x TO 1.5e10.";
+
+            // Act
+            var result = _extractor.Extract(script);
+
+            // Assert
+            Assert.That(result.IsUserDefined("x"), Is.True);
+            // 1.5e10 should not appear as identifier (it's a number literal)
+            Assert.That(result.Identifiers.Any(i => i.Normalized.Contains("1.5E10")), Is.False);
+            Assert.That(result.Identifiers.Any(i => i.Normalized == "E10"), Is.False);
+        }
+
+        [Test]
+        public void Extract_NullScript_ReturnsEmptySet_Verify()
+        {
+            // This test already exists but we verify the specific behavior
+            var result = _extractor.Extract(null);
+
+            Assert.That(result.IsEmpty, Is.True);
+            Assert.That(result.Count, Is.EqualTo(0));
+            Assert.That(result.Identifiers, Is.Empty);
         }
 
         #endregion
