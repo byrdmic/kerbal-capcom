@@ -144,6 +144,9 @@ namespace KSPCapcom.Responders
                     // Inject references section for grounded mode
                     var content = InjectReferencesIfNeeded(response.Content, validationResult, docTracker);
 
+                    // Inject validation feedback (warning or success)
+                    content = InjectValidationFeedbackIfNeeded(content, validationResult);
+
                     return ResponderResult.Ok(content, validationResult);
                 }
 
@@ -170,6 +173,7 @@ namespace KSPCapcom.Responders
             CapcomCore.LogWarning($"LLMResponder: Max tool iterations ({MaxToolIterations}) reached");
             var finalValidation = ValidateResponseIfNeeded(response?.Content ?? "", docTracker);
             var finalContent = InjectReferencesIfNeeded(response?.Content ?? "", finalValidation, docTracker);
+            finalContent = InjectValidationFeedbackIfNeeded(finalContent, finalValidation);
             return ResponderResult.Ok(finalContent, finalValidation);
         }
 
@@ -208,6 +212,52 @@ namespace KSPCapcom.Responders
 
             // Append references to content
             return content + "\n\n" + references;
+        }
+
+        /// <summary>
+        /// Inject validation feedback (warning or success) into the response if grounded mode is enabled.
+        /// </summary>
+        private string InjectValidationFeedbackIfNeeded(string content, KosValidationResult validation)
+        {
+            try
+            {
+                // Only inject for grounded mode
+                if (!IsGroundedModeEnabled())
+                {
+                    return content;
+                }
+
+                // Only inject if we have code in the response
+                if (!ContainsCodeBlock(content))
+                {
+                    return content;
+                }
+
+                // Build feedback
+                var feedback = ValidationFeedbackBuilder.Build(validation);
+
+                // No feedback to add
+                if (string.IsNullOrEmpty(feedback))
+                {
+                    return content;
+                }
+
+                // Check if LLM already included a warning indicator (avoid duplication)
+                if (content.Contains("Grounded Check Failed") || content.Contains("**Grounded**"))
+                {
+                    CapcomCore.Log("LLMResponder: Skipping feedback injection - already present");
+                    return content;
+                }
+
+                // Append feedback to content
+                return content + "\n\n" + feedback;
+            }
+            catch (Exception ex)
+            {
+                // Never break chat flow due to feedback injection failure
+                CapcomCore.LogWarning($"LLMResponder: Feedback injection error: {ex.Message}");
+                return content;
+            }
         }
 
         /// <summary>

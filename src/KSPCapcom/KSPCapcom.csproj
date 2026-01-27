@@ -121,6 +121,7 @@
     <Compile Include="Validation\KosIdentifierValidator.cs" />
     <Compile Include="Validation\KosValidationResult.cs" />
     <Compile Include="Validation\ReferenceBuilder.cs" />
+    <Compile Include="Validation\ValidationFeedbackBuilder.cs" />
     <Compile Include="SecretStore.cs" />
     <Compile Include="ToolbarButton.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
