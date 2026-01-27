@@ -518,5 +518,37 @@ namespace KSPCapcom.Tests
         }
 
         #endregion
+
+        #region LKO Ascent Guidance Tests
+
+        [Test]
+        public void BuildSystemPrompt_WithoutKSP_DoesNotContainAscentGuidance()
+        {
+            // Arrange
+            var settings = new CapcomSettings { Mode = OperationMode.Teach };
+            var builder = new PromptBuilder(settings);
+
+            // Act
+            var prompt = builder.BuildSystemPrompt();
+
+            // Assert - without KSP_PRESENT, ascent guidance should not appear
+            Assert.That(prompt, Does.Not.Contain("ASCENT SCRIPT GUIDANCE"));
+        }
+
+        [Test]
+        public void BuildSystemPrompt_WithoutKSP_DoModeDoesNotContainAscentGuidance()
+        {
+            // Arrange
+            var settings = new CapcomSettings { Mode = OperationMode.Do };
+            var builder = new PromptBuilder(settings);
+
+            // Act
+            var prompt = builder.BuildSystemPrompt();
+
+            // Assert - without KSP_PRESENT, ascent guidance should not appear even in Do mode
+            Assert.That(prompt, Does.Not.Contain("ASCENT SCRIPT GUIDANCE"));
+        }
+
+        #endregion
     }
 }

@@ -36,7 +36,7 @@ namespace KSPCapcom
         /// Increment when making significant changes to prompt structure or content.
         /// Format: Major.Minor.Patch (semantic versioning)
         /// </summary>
-        public const string PromptVersion = "1.2.0";
+        public const string PromptVersion = "1.3.0";
 
         /// <summary>
         /// Core CAPCOM identity and voice guidance.
@@ -125,6 +125,19 @@ namespace KSPCapcom
             "The scripts you provide are suggestions that the player must choose to use.";
 
         /// <summary>
+        /// LKO ascent script guidance - applied when craft context is available in editor.
+        /// Guides the model to produce craft-aware gravity turn scripts.
+        /// </summary>
+        private const string LKOAscentGuidance =
+            "ASCENT SCRIPT GUIDANCE:\n" +
+            "When the player requests an LKO ascent or launch script:\n" +
+            "- Reference the craft's TWR and delta-V from the snapshot when tuning parameters\n" +
+            "- For TWR >= 1.5: aggressive gravity turn starting ~100m; TWR 1.0-1.5: gentler turn starting ~250m\n" +
+            "- Target apoapsis based on available delta-V (typical LKO: 70-80km for Kerbin)\n" +
+            "- State the snapshot values you're using or note if metrics unavailable\n" +
+            "- In Do mode: one kOS code block with parameter summary, minimal prose";
+
+        /// <summary>
         /// Warning when grounded mode is enabled but documentation is not loaded.
         /// </summary>
         private const string GroundedModeNoDocsWarning =
@@ -174,6 +187,37 @@ namespace KSPCapcom
             }
 
             return sb.ToString();
+        }
+
+        /// <summary>
+        /// Get LKO ascent guidance if craft context is available in editor.
+        /// Returns empty string if not in editor or no craft loaded.
+        /// </summary>
+        private string GetLKOAscentGuidance()
+        {
+#if KSP_PRESENT
+            try
+            {
+                if (!HighLogic.LoadedSceneIsEditor)
+                {
+                    return string.Empty;
+                }
+
+                var monitor = EditorCraftMonitor.Instance;
+                if (monitor?.CurrentSnapshot == null || monitor.CurrentSnapshot.IsEmpty)
+                {
+                    return string.Empty;
+                }
+
+                return LKOAscentGuidance;
+            }
+            catch
+            {
+                return string.Empty;
+            }
+#else
+            return string.Empty;
+#endif
         }
 
         private readonly Func<CapcomSettings> _getSettings;
@@ -263,6 +307,14 @@ namespace KSPCapcom
             if (!string.IsNullOrEmpty(groundedInstructions))
             {
                 builder.AppendLine(groundedInstructions);
+                builder.AppendLine();
+            }
+
+            // 5.5 LKO Ascent guidance (if in editor with craft)
+            string ascentGuidance = GetLKOAscentGuidance();
+            if (!string.IsNullOrEmpty(ascentGuidance))
+            {
+                builder.AppendLine(ascentGuidance);
                 builder.AppendLine();
             }
 
