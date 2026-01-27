@@ -461,6 +461,18 @@ namespace KSPCapcom
         {
             GUILayout.BeginVertical();
 
+            // Show grounded mode indicator when active
+            if (_settings != null && _settings.GroundedModeEnabled)
+            {
+                var groundedIndicatorStyle = new GUIStyle(HighLogic.Skin.label)
+                {
+                    fontSize = 10,
+                    alignment = TextAnchor.MiddleCenter
+                };
+                groundedIndicatorStyle.normal.textColor = new Color(0.4f, 0.8f, 1.0f); // Cyan
+                GUILayout.Label("Grounded Mode Active", groundedIndicatorStyle);
+            }
+
             // Collapsible settings area
             DrawSettingsArea();
 
@@ -517,6 +529,32 @@ namespace KSPCapcom
                 }
 
                 GUILayout.Label("(placeholder)", GUILayout.ExpandWidth(true));
+                GUILayout.EndHorizontal();
+
+                GUILayout.Space(4);
+
+                // Grounded mode row
+                GUILayout.BeginHorizontal();
+                GUILayout.Label("Grounded:", GUILayout.Width(60));
+
+                bool wasGrounded = _settings.GroundedModeEnabled;
+                bool newGrounded = GUILayout.Toggle(_settings.GroundedModeEnabled,
+                    _settings.GroundedModeEnabled ? "On" : "Off",
+                    HighLogic.Skin.button, GUILayout.Width(40));
+
+                if (newGrounded != wasGrounded)
+                {
+                    _settings.GroundedModeEnabled = newGrounded;
+                    CapcomCore.Log($"Grounded mode: {(newGrounded ? "On" : "Off")}");
+                }
+
+                // Status indicator with color
+                var groundedStatusStyle = new GUIStyle(_statusLabelStyle);
+                groundedStatusStyle.normal.textColor = _settings.GroundedModeEnabled
+                    ? new Color(0.4f, 0.8f, 1.0f) // Cyan when enabled
+                    : new Color(0.6f, 0.6f, 0.6f); // Gray when disabled
+                GUILayout.Label(_settings.GroundedModeEnabled ? "(strict kOS validation)" : "(flexible)", groundedStatusStyle);
+
                 GUILayout.EndHorizontal();
 
                 GUILayout.Space(4);
