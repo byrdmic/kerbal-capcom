@@ -386,5 +386,137 @@ namespace KSPCapcom.Tests
         }
 
         #endregion
+
+        #region Grounded Mode Tests
+
+        [Test]
+        public void BuildSystemPrompt_GroundedModeEnabled_ContainsGroundedInstructions()
+        {
+            // Arrange
+            var settings = new CapcomSettings
+            {
+                Mode = OperationMode.Teach,
+                GroundedModeEnabled = true
+            };
+            var builder = new PromptBuilder(settings);
+
+            // Act
+            var prompt = builder.BuildSystemPrompt();
+
+            // Assert
+            Assert.That(prompt, Does.Contain("GROUNDED MODE ACTIVE"));
+            Assert.That(prompt, Does.Contain("STRICT DOCUMENTATION RULES"));
+            Assert.That(prompt, Does.Contain("IDENTIFIER VERIFICATION REQUIRED"));
+        }
+
+        [Test]
+        public void BuildSystemPrompt_GroundedModeDisabled_NoGroundedInstructions()
+        {
+            // Arrange
+            var settings = new CapcomSettings
+            {
+                Mode = OperationMode.Teach,
+                GroundedModeEnabled = false
+            };
+            var builder = new PromptBuilder(settings);
+
+            // Act
+            var prompt = builder.BuildSystemPrompt();
+
+            // Assert
+            Assert.That(prompt, Does.Not.Contain("GROUNDED MODE ACTIVE"));
+            Assert.That(prompt, Does.Not.Contain("STRICT DOCUMENTATION RULES"));
+        }
+
+        [Test]
+        public void BuildSystemPrompt_GroundedModeWithDoMode_ContainsBothInstructions()
+        {
+            // Arrange
+            var settings = new CapcomSettings
+            {
+                Mode = OperationMode.Do,
+                GroundedModeEnabled = true
+            };
+            var builder = new PromptBuilder(settings);
+
+            // Act
+            var prompt = builder.BuildSystemPrompt();
+
+            // Assert - should contain both Do mode and Grounded mode instructions
+            Assert.That(prompt, Does.Contain("MODE: DO"));
+            Assert.That(prompt, Does.Contain("player wants actionable steps"));
+            Assert.That(prompt, Does.Contain("GROUNDED MODE ACTIVE"));
+            Assert.That(prompt, Does.Contain("IDENTIFIER VERIFICATION REQUIRED"));
+        }
+
+        [Test]
+        public void BuildSystemPrompt_GroundedMode_ContainsReferencesRequirement()
+        {
+            // Arrange
+            var settings = new CapcomSettings
+            {
+                Mode = OperationMode.Teach,
+                GroundedModeEnabled = true
+            };
+            var builder = new PromptBuilder(settings);
+
+            // Act
+            var prompt = builder.BuildSystemPrompt();
+
+            // Assert
+            Assert.That(prompt, Does.Contain("REFERENCES SECTION REQUIRED"));
+            Assert.That(prompt, Does.Contain("## References"));
+        }
+
+        [Test]
+        public void BuildSystemPrompt_GroundedMode_ContainsAntiGoalReinforcement()
+        {
+            // Arrange
+            var settings = new CapcomSettings
+            {
+                Mode = OperationMode.Teach,
+                GroundedModeEnabled = true
+            };
+            var builder = new PromptBuilder(settings);
+
+            // Act
+            var prompt = builder.BuildSystemPrompt();
+
+            // Assert - should contain the anti-goal reinforcement
+            Assert.That(prompt, Does.Contain("You generate kOS scripts for the player to review and run"));
+            Assert.That(prompt, Does.Contain("You do NOT execute code or pilot the craft directly"));
+        }
+
+        [Test]
+        public void BuildSystemPrompt_GroundedModeWithTeachMode_ContainsBothInstructions()
+        {
+            // Arrange
+            var settings = new CapcomSettings
+            {
+                Mode = OperationMode.Teach,
+                GroundedModeEnabled = true
+            };
+            var builder = new PromptBuilder(settings);
+
+            // Act
+            var prompt = builder.BuildSystemPrompt();
+
+            // Assert - should contain both Teach mode and Grounded mode instructions
+            Assert.That(prompt, Does.Contain("MODE: TEACH"));
+            Assert.That(prompt, Does.Contain("player wants to learn"));
+            Assert.That(prompt, Does.Contain("GROUNDED MODE ACTIVE"));
+        }
+
+        [Test]
+        public void BuildSystemPrompt_GroundedModeDefault_IsFalse()
+        {
+            // Arrange
+            var settings = new CapcomSettings();
+
+            // Assert - default should be false
+            Assert.That(settings.GroundedModeEnabled, Is.False);
+        }
+
+        #endregion
     }
 }

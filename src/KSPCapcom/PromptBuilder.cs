@@ -36,7 +36,7 @@ namespace KSPCapcom
         /// Increment when making significant changes to prompt structure or content.
         /// Format: Major.Minor.Patch (semantic versioning)
         /// </summary>
-        public const string PromptVersion = "1.1.0";
+        public const string PromptVersion = "1.2.0";
 
         /// <summary>
         /// Core CAPCOM identity and voice guidance.
@@ -93,6 +93,46 @@ namespace KSPCapcom
             "Refer to Kerbals by name when relevant; they're the heroes of the mission.";
 
         /// <summary>
+        /// Grounded mode instructions - strict documentation adherence for kOS code generation.
+        /// </summary>
+        private const string GroundedModeInstructions =
+            "GROUNDED MODE ACTIVE - STRICT DOCUMENTATION RULES:\n" +
+            "You are operating in grounded mode. When generating kOS scripts, you MUST follow these rules:\n\n" +
+            "1. IDENTIFIER VERIFICATION REQUIRED:\n" +
+            "   - ONLY use kOS identifiers (structures, suffixes, keywords, functions, commands) that appear in " +
+            "the documentation snippets provided with this conversation or retrieved via the search_kos_docs tool.\n" +
+            "   - If you need an identifier and do not have documentation for it, you MUST call search_kos_docs " +
+            "with that identifier before using it.\n" +
+            "   - NEVER invent, guess, or hallucinate kOS API names. If documentation is unavailable, " +
+            "say so explicitly.\n\n" +
+            "2. WHEN DOCUMENTATION IS MISSING:\n" +
+            "   - If search_kos_docs returns no results for a suspected identifier, inform the user: " +
+            "\"I could not find documentation for [identifier]. I cannot verify this is valid kOS syntax.\"\n" +
+            "   - Suggest alternative approaches using documented identifiers, or ask the user to verify " +
+            "the identifier exists in their kOS version.\n" +
+            "   - Do NOT provide code using unverified identifiers.\n\n" +
+            "3. REFERENCES SECTION REQUIRED:\n" +
+            "   - Every response containing kOS code MUST end with a \"## References\" section.\n" +
+            "   - List each documentation source used, including the identifier ID and source URL if available.\n" +
+            "   - Format: \"- [ID]: [brief description] (source: [URL or 'local docs'])\"";
+
+        /// <summary>
+        /// No-autopilot reinforcement for grounded mode context.
+        /// </summary>
+        private const string GroundedAntiGoalReinforcement =
+            "REMINDER: You generate kOS scripts for the player to review and run. " +
+            "You do NOT execute code or pilot the craft directly. " +
+            "The scripts you provide are suggestions that the player must choose to use.";
+
+        /// <summary>
+        /// Warning when grounded mode is enabled but documentation is not loaded.
+        /// </summary>
+        private const string GroundedModeNoDocsWarning =
+            "GROUNDED MODE WARNING: Documentation is not loaded. " +
+            "Grounded mode requires kOS documentation for verification. " +
+            "Treat all kOS identifiers as unverified and clearly state this limitation to the user.";
+
+        /// <summary>
         /// Get tool/reference instructions for the system prompt.
         /// Returns information about kOS documentation availability.
         /// </summary>
@@ -108,6 +148,32 @@ namespace KSPCapcom
                    "When relevant documentation is provided with the user's message, prioritize it " +
                    "for accurate kOS code examples. The documentation includes structures, suffixes, " +
                    "functions, keywords, and commands from kOS " + KosDocService.Instance.ContentVersion + ".";
+        }
+
+        /// <summary>
+        /// Get grounded mode instructions if enabled.
+        /// Returns empty string if grounded mode is disabled.
+        /// </summary>
+        private string GetGroundedModeInstructions()
+        {
+            var settings = _getSettings();
+            if (settings == null || !settings.GroundedModeEnabled)
+            {
+                return string.Empty;
+            }
+
+            var sb = new StringBuilder();
+            sb.AppendLine(GroundedModeInstructions);
+            sb.AppendLine();
+            sb.AppendLine(GroundedAntiGoalReinforcement);
+
+            if (!KosDocService.Instance.IsReady)
+            {
+                sb.AppendLine();
+                sb.AppendLine(GroundedModeNoDocsWarning);
+            }
+
+            return sb.ToString();
         }
 
         private readonly Func<CapcomSettings> _getSettings;
@@ -192,7 +258,15 @@ namespace KSPCapcom
             builder.AppendLine(modeInstructions);
             builder.AppendLine();
 
-            // 5. Tool instructions (future expansion point - currently empty)
+            // 5. Grounded mode instructions (if enabled)
+            string groundedInstructions = GetGroundedModeInstructions();
+            if (!string.IsNullOrEmpty(groundedInstructions))
+            {
+                builder.AppendLine(groundedInstructions);
+                builder.AppendLine();
+            }
+
+            // 6. Tool instructions (kOS docs availability)
             string toolInstructions = GetToolInstructions();
             if (!string.IsNullOrEmpty(toolInstructions))
             {
@@ -200,7 +274,7 @@ namespace KSPCapcom
                 builder.AppendLine();
             }
 
-            // 6. Style guidelines
+            // 7. Style guidelines
             builder.Append(StyleGuidelines);
 
             return builder.ToString();

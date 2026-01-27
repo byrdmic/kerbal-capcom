@@ -30,6 +30,13 @@ namespace KSPCapcom
         public OperationMode Mode { get; set; } = OperationMode.Teach;
 
         /// <summary>
+        /// Whether grounded mode is enabled.
+        /// When enabled, the LLM will only use kOS identifiers that are verifiable
+        /// from retrieved documentation and will request additional searches for unknowns.
+        /// </summary>
+        public bool GroundedModeEnabled { get; set; } = false;
+
+        /// <summary>
         /// Model identifier for LLM requests.
         /// </summary>
         public string Model { get; private set; } = DefaultModel;
