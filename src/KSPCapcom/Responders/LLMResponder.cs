@@ -140,7 +140,11 @@ namespace KSPCapcom.Responders
                 {
                     // Final response - validate if grounded mode is enabled
                     var validationResult = ValidateResponseIfNeeded(response.Content, docTracker);
-                    return ResponderResult.Ok(response.Content, validationResult);
+
+                    // Inject references section for grounded mode
+                    var content = InjectReferencesIfNeeded(response.Content, validationResult, docTracker);
+
+                    return ResponderResult.Ok(content, validationResult);
                 }
 
                 // Process tool calls
@@ -165,7 +169,45 @@ namespace KSPCapcom.Responders
             // Max iterations reached - return last available response
             CapcomCore.LogWarning($"LLMResponder: Max tool iterations ({MaxToolIterations}) reached");
             var finalValidation = ValidateResponseIfNeeded(response?.Content ?? "", docTracker);
-            return ResponderResult.Ok(response?.Content ?? "", finalValidation);
+            var finalContent = InjectReferencesIfNeeded(response?.Content ?? "", finalValidation, docTracker);
+            return ResponderResult.Ok(finalContent, finalValidation);
+        }
+
+        /// <summary>
+        /// Inject a references section into the response if grounded mode is enabled.
+        /// </summary>
+        private string InjectReferencesIfNeeded(string content, KosValidationResult validation, DocEntryTracker docTracker)
+        {
+            // Only inject for grounded mode
+            if (!IsGroundedModeEnabled())
+            {
+                return content;
+            }
+
+            // Only inject if we have code in the response
+            if (!ContainsCodeBlock(content))
+            {
+                return content;
+            }
+
+            // Build references section
+            var references = ReferenceBuilder.Build(validation, docTracker);
+
+            // Don't modify if no references to add
+            if (string.IsNullOrEmpty(references))
+            {
+                return content;
+            }
+
+            // Check if LLM already included a References section (avoid duplication)
+            if (content.Contains("## References") || content.Contains("## Documentation"))
+            {
+                CapcomCore.Log("LLMResponder: Skipping reference injection - LLM already included references");
+                return content;
+            }
+
+            // Append references to content
+            return content + "\n\n" + references;
         }
 
         /// <summary>

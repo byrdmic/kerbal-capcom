@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Text;
+using KSPCapcom.KosDocs;
 
 namespace KSPCapcom.Validation
 {
@@ -22,6 +23,11 @@ namespace KSPCapcom.Validation
         /// URL to official documentation, if available.
         /// </summary>
         public string SourceRef { get; }
+
+        /// <summary>
+        /// The documentation entry that verified this identifier, if available.
+        /// </summary>
+        public DocEntry SourceDoc { get; internal set; }
 
         public VerifiedIdentifier(string identifier, string docEntryId, string sourceRef)
         {

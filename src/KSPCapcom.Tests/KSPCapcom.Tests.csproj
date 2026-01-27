@@ -39,6 +39,7 @@
     <Compile Include="..\KSPCapcom\Validation\DocEntryTracker.cs" Link="Validation\DocEntryTracker.cs" />
     <Compile Include="..\KSPCapcom\Validation\KosIdentifierExtractor.cs" Link="Validation\KosIdentifierExtractor.cs" />
     <Compile Include="..\KSPCapcom\Validation\KosIdentifierValidator.cs" Link="Validation\KosIdentifierValidator.cs" />
+    <Compile Include="..\KSPCapcom\Validation\ReferenceBuilder.cs" Link="Validation\ReferenceBuilder.cs" />
   </ItemGroup>
 
 </Project>

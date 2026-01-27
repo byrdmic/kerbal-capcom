@@ -92,5 +92,64 @@ namespace KSPCapcom.Validation
             _entries.Clear();
             _seenIds.Clear();
         }
+
+        /// <summary>
+        /// Find a DocEntry that matches the given identifier.
+        /// Tries exact match on ID first, then partial matches.
+        /// </summary>
+        /// <param name="identifier">The identifier to find (e.g., "SHIP:VELOCITY").</param>
+        /// <returns>The matching DocEntry, or null if not found.</returns>
+        public DocEntry FindByIdentifier(string identifier)
+        {
+            if (string.IsNullOrEmpty(identifier)) return null;
+
+            var normalizedId = identifier.ToUpperInvariant();
+
+            // Try exact match on ID first
+            foreach (var entry in _entries)
+            {
+                if (string.Equals(entry.Id, normalizedId, System.StringComparison.OrdinalIgnoreCase))
+                {
+                    return entry;
+                }
+            }
+
+            // Try match on Name (for suffixes like VELOCITY -> VESSEL:VELOCITY)
+            foreach (var entry in _entries)
+            {
+                if (string.Equals(entry.Name, normalizedId, System.StringComparison.OrdinalIgnoreCase))
+                {
+                    return entry;
+                }
+            }
+
+            // Try partial match (identifier ends with :Name)
+            foreach (var entry in _entries)
+            {
+                if (!string.IsNullOrEmpty(entry.Name))
+                {
+                    var suffix = ":" + entry.Name.ToUpperInvariant();
+                    if (normalizedId.EndsWith(suffix))
+                    {
+                        return entry;
+                    }
+                }
+            }
+
+            // Try match where entry ID ends with the identifier
+            foreach (var entry in _entries)
+            {
+                if (!string.IsNullOrEmpty(entry.Id))
+                {
+                    var entryIdUpper = entry.Id.ToUpperInvariant();
+                    if (entryIdUpper.EndsWith(":" + normalizedId) || entryIdUpper == normalizedId)
+                    {
+                        return entry;
+                    }
+                }
+            }
+
+            return null;
+        }
     }
 }
