@@ -34,6 +34,12 @@ namespace KSPCapcom.KosDocs
         /// </summary>
         public IReadOnlyList<KosDocResultEntry> Entries { get; private set; }
 
+        /// <summary>
+        /// Original DocEntry objects used to create this result.
+        /// Used by validation to track retrieved documentation.
+        /// </summary>
+        public IReadOnlyList<DocEntry> SourceEntries { get; private set; }
+
         private KosDocSearchResult() { }
 
         /// <summary>
@@ -68,6 +74,8 @@ namespace KSPCapcom.KosDocs
         public static KosDocSearchResult FromDocEntries(IReadOnlyList<DocEntry> entries)
         {
             var resultEntries = new List<KosDocResultEntry>();
+            var sourceList = entries != null ? new List<DocEntry>(entries) : new List<DocEntry>();
+
             if (entries != null)
             {
                 foreach (var entry in entries)
@@ -75,7 +83,10 @@ namespace KSPCapcom.KosDocs
                     resultEntries.Add(KosDocResultEntry.FromDocEntry(entry));
                 }
             }
-            return Ok(resultEntries);
+
+            var result = Ok(resultEntries);
+            result.SourceEntries = sourceList;
+            return result;
         }
 
         /// <summary>

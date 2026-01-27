@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading;
+using KSPCapcom.Validation;
 
 namespace KSPCapcom.Responders
 {
@@ -18,18 +19,33 @@ namespace KSPCapcom.Responders
         /// <summary>Error message if Success is false.</summary>
         public string ErrorMessage { get; }
 
-        private ResponderResult(string text, bool success, string errorMessage)
+        /// <summary>
+        /// Validation result for kOS identifiers in the response.
+        /// Null if validation was not performed.
+        /// </summary>
+        public KosValidationResult ValidationResult { get; }
+
+        /// <summary>
+        /// Whether the response has validation warnings (unverified identifiers).
+        /// </summary>
+        public bool HasValidationWarnings => ValidationResult?.HasUnverifiedIdentifiers ?? false;
+
+        private ResponderResult(string text, bool success, string errorMessage, KosValidationResult validationResult = null)
         {
             Text = text;
             Success = success;
             ErrorMessage = errorMessage;
+            ValidationResult = validationResult;
         }
 
         public static ResponderResult Ok(string text) =>
-            new ResponderResult(text, true, null);
+            new ResponderResult(text, true, null, null);
+
+        public static ResponderResult Ok(string text, KosValidationResult validationResult) =>
+            new ResponderResult(text, true, null, validationResult);
 
         public static ResponderResult Fail(string errorMessage) =>
-            new ResponderResult(null, false, errorMessage);
+            new ResponderResult(null, false, errorMessage, null);
     }
 
     /// <summary>

@@ -1,5 +1,6 @@
 using System;
 using KSPCapcom.KosDocs;
+using KSPCapcom.Validation;
 
 namespace KSPCapcom.LLM
 {
@@ -18,6 +19,19 @@ namespace KSPCapcom.LLM
         /// <returns>JSON string containing the tool result.</returns>
         public static string Execute(string toolName, string argumentsJson)
         {
+            return Execute(toolName, argumentsJson, null);
+        }
+
+        /// <summary>
+        /// Execute a tool call and return the result as JSON, optionally tracking retrieved docs.
+        /// Never throws - returns error JSON on failure.
+        /// </summary>
+        /// <param name="toolName">Name of the tool to execute.</param>
+        /// <param name="argumentsJson">JSON string containing tool arguments.</param>
+        /// <param name="docTracker">Optional tracker for retrieved documentation entries.</param>
+        /// <returns>JSON string containing the tool result.</returns>
+        public static string Execute(string toolName, string argumentsJson, DocEntryTracker docTracker)
+        {
             try
             {
                 CapcomCore.Log($"[ToolCallHandler] Executing tool: {toolName}");
@@ -25,7 +39,7 @@ namespace KSPCapcom.LLM
                 switch (toolName)
                 {
                     case KosDocTool.ToolName:
-                        return ExecuteKosDocSearch(argumentsJson);
+                        return ExecuteKosDocSearch(argumentsJson, docTracker);
 
                     default:
                         CapcomCore.LogWarning($"[ToolCallHandler] Unknown tool: {toolName}");
@@ -42,10 +56,17 @@ namespace KSPCapcom.LLM
         /// <summary>
         /// Execute the kOS documentation search tool.
         /// </summary>
-        private static string ExecuteKosDocSearch(string argumentsJson)
+        private static string ExecuteKosDocSearch(string argumentsJson, DocEntryTracker docTracker)
         {
             var tool = new KosDocTool();
             var result = tool.ExecuteFromJson(argumentsJson);
+
+            // Track retrieved entries for validation
+            if (docTracker != null && result.Success && result.SourceEntries != null)
+            {
+                docTracker.Add(result.SourceEntries);
+            }
+
             return result.ToJson();
         }
 

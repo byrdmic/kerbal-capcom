@@ -115,6 +115,11 @@
     <Compile Include="KosDocs\KosDocSearchResult.cs" />
     <Compile Include="KosDocs\KosDocService.cs" />
     <Compile Include="KosDocs\KosDocTool.cs" />
+    <Compile Include="Validation\DocEntryTracker.cs" />
+    <Compile Include="Validation\KosIdentifierExtractor.cs" />
+    <Compile Include="Validation\KosIdentifierSet.cs" />
+    <Compile Include="Validation\KosIdentifierValidator.cs" />
+    <Compile Include="Validation\KosValidationResult.cs" />
     <Compile Include="SecretStore.cs" />
     <Compile Include="ToolbarButton.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

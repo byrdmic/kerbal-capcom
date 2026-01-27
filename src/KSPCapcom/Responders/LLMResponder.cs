@@ -1,11 +1,13 @@
 using System;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using KSPCapcom;
 using KSPCapcom.KosDocs;
 using KSPCapcom.LLM;
 using KSPCapcom.LLM.OpenAI;
+using KSPCapcom.Validation;
 
 namespace KSPCapcom.Responders
 {
@@ -20,9 +22,17 @@ namespace KSPCapcom.Responders
         /// </summary>
         private const int MaxToolIterations = 40;
 
+        /// <summary>
+        /// Regex pattern to match kOS code blocks in markdown.
+        /// </summary>
+        private static readonly Regex CodeBlockPattern = new Regex(
+            @"```(?:kos|kerboscript)?[\s\S]*?```",
+            RegexOptions.Compiled | RegexOptions.IgnoreCase);
+
         private readonly ILLMConnector _connector;
         private readonly PromptBuilder _promptBuilder;
         private readonly LLMRequestOptions _baseOptions;
+        private readonly Func<CapcomSettings> _getSettings;
 
         public override string Name => $"LLM ({_connector.Name})";
 
@@ -37,6 +47,7 @@ namespace KSPCapcom.Responders
             _connector = connector ?? throw new ArgumentNullException(nameof(connector));
             _promptBuilder = promptBuilder ?? throw new ArgumentNullException(nameof(promptBuilder));
             _baseOptions = options ?? new LLMRequestOptions();
+            _getSettings = null; // Will use PromptBuilder's mode check for grounded mode
         }
 
         protected override async Task<ResponderResult> DoRespondAsync(
@@ -74,6 +85,9 @@ namespace KSPCapcom.Responders
 
             // Log prompt version and mode for debugging
             CapcomCore.Log($"LLMResponder: Using prompt v{PromptBuilder.PromptVersion}, mode={_promptBuilder.GetCurrentMode()}");
+
+            // Create doc tracker for grounded mode validation
+            var docTracker = new DocEntryTracker();
 
             // Tool call handling loop
             int iteration = 0;
@@ -124,8 +138,9 @@ namespace KSPCapcom.Responders
                 // Check if we have tool calls to process
                 if (!response.HasToolCalls)
                 {
-                    // Final response - return to user
-                    return ResponderResult.Ok(response.Content);
+                    // Final response - validate if grounded mode is enabled
+                    var validationResult = ValidateResponseIfNeeded(response.Content, docTracker);
+                    return ResponderResult.Ok(response.Content, validationResult);
                 }
 
                 // Process tool calls
@@ -134,7 +149,7 @@ namespace KSPCapcom.Responders
                 // Add assistant message with tool calls
                 messages.Add(LLMMessage.AssistantWithToolCalls(response.Content, response.ToolCalls));
 
-                // Execute each tool call and add results
+                // Execute each tool call and add results (with doc tracking)
                 foreach (var toolCall in response.ToolCalls)
                 {
                     if (toolCall?.Function == null)
@@ -142,14 +157,142 @@ namespace KSPCapcom.Responders
                         continue;
                     }
 
-                    var result = ToolCallHandler.Execute(toolCall.Function.Name, toolCall.Function.Arguments);
+                    var result = ToolCallHandler.Execute(toolCall.Function.Name, toolCall.Function.Arguments, docTracker);
                     messages.Add(LLMMessage.ToolResponse(toolCall.Id, result, toolCall.Function.Name));
                 }
             }
 
             // Max iterations reached - return last available response
             CapcomCore.LogWarning($"LLMResponder: Max tool iterations ({MaxToolIterations}) reached");
-            return ResponderResult.Ok(response?.Content ?? "");
+            var finalValidation = ValidateResponseIfNeeded(response?.Content ?? "", docTracker);
+            return ResponderResult.Ok(response?.Content ?? "", finalValidation);
+        }
+
+        /// <summary>
+        /// Validate kOS identifiers in the response if grounded mode is enabled.
+        /// </summary>
+        private KosValidationResult ValidateResponseIfNeeded(string content, DocEntryTracker docTracker)
+        {
+            try
+            {
+                // Check if grounded mode is enabled
+                if (!IsGroundedModeEnabled())
+                {
+                    return null; // Validation not needed
+                }
+
+                // Check if response contains code blocks
+                if (!ContainsCodeBlock(content))
+                {
+                    return null; // No code to validate
+                }
+
+                // Extract code from code blocks
+                var codeContent = ExtractCodeFromResponse(content);
+                if (string.IsNullOrEmpty(codeContent))
+                {
+                    return null;
+                }
+
+                // Extract identifiers from the code
+                var extractor = new KosIdentifierExtractor();
+                var identifiers = extractor.Extract(codeContent);
+
+                if (identifiers.IsEmpty)
+                {
+                    return null;
+                }
+
+                // Get doc entries for validation
+                var docEntries = docTracker.GetAll();
+
+                // Also add entries from semantic search in BuildUserContext (if any were retrieved)
+                // The docTracker already captures tool call results
+
+                // Create validator with retrieved docs and search index for suggestions
+                var validator = new KosIdentifierValidator(docEntries, GetSearchIndex());
+
+                // Validate
+                var result = validator.Validate(identifiers);
+
+                // Log validation summary
+                if (result.HasUnverifiedIdentifiers)
+                {
+                    CapcomCore.LogWarning($"LLMResponder: Validation found {result.Unverified.Count} unverified identifier(s)");
+                }
+                else
+                {
+                    CapcomCore.Log($"LLMResponder: Validation passed - {result.Verified.Count} identifier(s) verified");
+                }
+
+                return result;
+            }
+            catch (Exception ex)
+            {
+                // Never break chat flow due to validation failure
+                CapcomCore.LogWarning($"LLMResponder: Validation error: {ex.Message}");
+                return KosValidationResult.Skipped("Validation failed: " + ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// Check if grounded mode is enabled in settings.
+        /// </summary>
+        private bool IsGroundedModeEnabled()
+        {
+            // Check the prompt for grounded mode indicator
+            // The prompt builder adds "GROUNDED MODE ACTIVE" when enabled
+            var systemPrompt = _promptBuilder.BuildSystemPrompt();
+            return systemPrompt.Contains("GROUNDED MODE ACTIVE");
+        }
+
+        /// <summary>
+        /// Check if the response contains code blocks.
+        /// </summary>
+        private bool ContainsCodeBlock(string content)
+        {
+            if (string.IsNullOrEmpty(content)) return false;
+            return CodeBlockPattern.IsMatch(content);
+        }
+
+        /// <summary>
+        /// Extract code content from markdown code blocks.
+        /// </summary>
+        private string ExtractCodeFromResponse(string content)
+        {
+            if (string.IsNullOrEmpty(content)) return string.Empty;
+
+            var matches = CodeBlockPattern.Matches(content);
+            if (matches.Count == 0) return string.Empty;
+
+            var sb = new System.Text.StringBuilder();
+            foreach (Match match in matches)
+            {
+                var code = match.Value;
+                // Remove the opening ``` and language specifier
+                var startIndex = code.IndexOf('\n');
+                if (startIndex < 0) continue;
+
+                // Remove the closing ```
+                var endIndex = code.LastIndexOf("```");
+                if (endIndex <= startIndex) continue;
+
+                var codeBody = code.Substring(startIndex + 1, endIndex - startIndex - 1);
+                sb.AppendLine(codeBody);
+            }
+
+            return sb.ToString();
+        }
+
+        /// <summary>
+        /// Get the search index for fuzzy suggestions.
+        /// </summary>
+        private KosDocIndex GetSearchIndex()
+        {
+            // Access the internal index through KosDocService
+            // For now, return null to use the fallback substring matching
+            // A future enhancement could expose the index from KosDocService
+            return null;
         }
 
         /// <summary>

@@ -34,6 +34,11 @@
     <Compile Include="..\KSPCapcom\KosDocs\KosDocService.cs" Link="KosDocs\KosDocService.cs" />
     <Compile Include="..\KSPCapcom\KosDocs\KosDocTool.cs" Link="KosDocs\KosDocTool.cs" />
     <Compile Include="..\KSPCapcom\LLM\OpenAI\OpenAIModels.cs" Link="LLM\OpenAI\OpenAIModels.cs" />
+    <Compile Include="..\KSPCapcom\Validation\KosIdentifierSet.cs" Link="Validation\KosIdentifierSet.cs" />
+    <Compile Include="..\KSPCapcom\Validation\KosValidationResult.cs" Link="Validation\KosValidationResult.cs" />
+    <Compile Include="..\KSPCapcom\Validation\DocEntryTracker.cs" Link="Validation\DocEntryTracker.cs" />
+    <Compile Include="..\KSPCapcom\Validation\KosIdentifierExtractor.cs" Link="Validation\KosIdentifierExtractor.cs" />
+    <Compile Include="..\KSPCapcom\Validation\KosIdentifierValidator.cs" Link="Validation\KosIdentifierValidator.cs" />
   </ItemGroup>
 
 </Project>
