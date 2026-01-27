@@ -45,6 +45,10 @@ namespace KSPCapcom
         /// </summary>
         public bool IsChatVisible => _chatPanel?.IsVisible ?? false;
 
+        // Log filter state
+        private static bool _logFilterInstalled = false;
+        private static FilteringLogHandler _logHandler;
+
         private void Awake()
         {
             // Ensure singleton - prevent duplicates across scene loads
@@ -56,6 +60,14 @@ namespace KSPCapcom
             }
 
             _instance = this;
+
+            // Install log filter once to suppress noisy Unity GUI errors
+            if (!_logFilterInstalled)
+            {
+                _logHandler = new FilteringLogHandler(Debug.unityLogger.logHandler);
+                Debug.unityLogger.logHandler = _logHandler;
+                _logFilterInstalled = true;
+            }
 
             // Initialize telemetry logging
             TelemetryConnector.LogAction = Log;
@@ -254,6 +266,37 @@ namespace KSPCapcom
         public static void LogError(string message)
         {
             Debug.LogError($"{LOG_PREFIX} {message}");
+        }
+    }
+
+    /// <summary>
+    /// Custom log handler that filters out noisy Unity GUI messages.
+    /// </summary>
+    internal class FilteringLogHandler : ILogHandler
+    {
+        private readonly ILogHandler _defaultHandler;
+
+        public FilteringLogHandler(ILogHandler defaultHandler)
+        {
+            _defaultHandler = defaultHandler;
+        }
+
+        public void LogFormat(LogType logType, UnityEngine.Object context, string format, params object[] args)
+        {
+            // Suppress the common Unity GUI error about GetLast after BeginGroup
+            // This comes from stock KSP or other mods with GUI layout issues
+            if (logType == LogType.Error && format != null &&
+                format.Contains("GetLast immediately after beginning a group"))
+            {
+                return; // Swallow the message
+            }
+
+            _defaultHandler.LogFormat(logType, context, format, args);
+        }
+
+        public void LogException(Exception exception, UnityEngine.Object context)
+        {
+            _defaultHandler.LogException(exception, context);
         }
     }
 }

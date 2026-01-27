@@ -245,6 +245,14 @@ namespace KSPCapcom.LLM.OpenAI
                     // Handle success (no network error and no HTTP error)
                     if (!webRequest.isHttpError)
                     {
+                        // Check if streaming response contains tool calls
+                        if (streamingHandler.HasToolCalls)
+                        {
+                            var toolCalls = streamingHandler.GetToolCalls();
+                            CapcomCore.Log($"Streaming response contains {toolCalls.Count} tool call(s)");
+                            return LLMResponse.WithToolCalls(toolCalls, responseBody, usage: null, model: request.Model);
+                        }
+
                         // Return the complete streamed response
                         return LLMResponse.Ok(responseBody, usage: null, model: request.Model);
                     }
