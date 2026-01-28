@@ -311,6 +311,199 @@ namespace KSPCapcom.Editor
             return sb.ToString();
         }
 
+        /// <summary>
+        /// Generate a structured JSON block for LLM context with craft metrics.
+        /// Wrapped in ```json:craft-metrics fencing for easy parsing.
+        /// </summary>
+        /// <returns>JSON block with code fence, or empty string if snapshot is empty.</returns>
+        public string ToCraftMetricsBlock()
+        {
+            if (IsEmpty)
+            {
+                return "";
+            }
+
+            var sb = new StringBuilder();
+            sb.AppendLine("```json:craft-metrics");
+            sb.Append("{");
+
+            // Context and basic info
+            sb.Append("\"context\":\"editor\"");
+            sb.Append($",\"craftName\":\"{JsonEscape(CraftName)}\"");
+            sb.Append($",\"facility\":\"{JsonEscape(Facility)}\"");
+
+            // TWR section from readiness metrics
+            sb.Append(",\"twr\":");
+            if (Readiness.TWR.IsAvailable)
+            {
+                sb.Append("{");
+                sb.Append($"\"asl\":{Readiness.TWR.AtmosphericTWR.ToString(System.Globalization.CultureInfo.InvariantCulture)}");
+                sb.Append($",\"vacuum\":{Readiness.TWR.VacuumTWR.ToString(System.Globalization.CultureInfo.InvariantCulture)}");
+                sb.Append($",\"engineCount\":{Readiness.TWR.EngineCount}");
+                sb.Append($",\"canLaunchFromKerbin\":{(Readiness.TWR.CanLaunchFromKerbin ? "true" : "false")}");
+                sb.Append("}");
+            }
+            else
+            {
+                sb.Append("null");
+            }
+
+            // Delta-V section
+            sb.Append(",\"deltaV\":");
+            if (Readiness.DeltaV.IsAvailable)
+            {
+                sb.Append("{");
+                sb.Append($"\"total\":{Readiness.DeltaV.TotalDeltaV.ToString(System.Globalization.CultureInfo.InvariantCulture)}");
+                sb.Append($",\"stageCount\":{Staging.StageCount}");
+                sb.Append(",\"perStage\":null"); // Future enhancement
+                sb.Append("}");
+            }
+            else
+            {
+                sb.Append("null");
+            }
+
+            // Engine aggregate
+            var engineAgg = GetEngineAggregate();
+            sb.Append(",\"engines\":");
+            sb.Append(engineAgg.ToJson());
+
+            // Control authority
+            sb.Append(",\"controlAuthority\":");
+            if (Readiness.ControlAuthority.IsAvailable)
+            {
+                string statusStr;
+                switch (Readiness.ControlAuthority.Status)
+                {
+                    case ControlAuthorityStatus.Good:
+                        statusStr = "good";
+                        break;
+                    case ControlAuthorityStatus.Marginal:
+                        statusStr = "marginal";
+                        break;
+                    default:
+                        statusStr = "none";
+                        break;
+                }
+                sb.Append($"\"{statusStr}\"");
+            }
+            else
+            {
+                sb.Append("null");
+            }
+
+            // Staging warnings
+            sb.Append(",\"stagingWarnings\":[");
+            if (Readiness.Staging.HasWarnings)
+            {
+                for (int i = 0; i < Readiness.Staging.Warnings.Count; i++)
+                {
+                    if (i > 0) sb.Append(",");
+                    sb.Append($"\"{JsonEscape(Readiness.Staging.Warnings[i])}\"");
+                }
+            }
+            sb.Append("]");
+
+            sb.Append("}");
+            sb.AppendLine();
+            sb.Append("```");
+
+            return sb.ToString();
+        }
+
+        /// <summary>
+        /// Aggregate engine information by type (solid, liquid, nuclear) with average ISP values.
+        /// </summary>
+        /// <returns>Aggregated engine summary, or empty aggregate if no engines.</returns>
+        public EngineSummaryAggregate GetEngineAggregate()
+        {
+            if (Engines == null || Engines.Count == 0)
+            {
+                return EngineSummaryAggregate.Empty;
+            }
+
+            int solidCount = 0;
+            int liquidCount = 0;
+            int nuclearCount = 0;
+            float totalIspVac = 0f;
+            float totalIspAtm = 0f;
+            int ispCount = 0;
+
+            foreach (var engine in Engines)
+            {
+                // Classify engine type based on propellants and throttle behavior
+                var engineType = ClassifyEngineType(engine);
+                switch (engineType)
+                {
+                    case EngineType.Solid:
+                        solidCount++;
+                        break;
+                    case EngineType.Nuclear:
+                        nuclearCount++;
+                        break;
+                    case EngineType.Liquid:
+                    default:
+                        liquidCount++;
+                        break;
+                }
+
+                // Accumulate ISP for averaging (only if valid)
+                if (engine.VacuumIsp > 0)
+                {
+                    totalIspVac += engine.VacuumIsp;
+                    totalIspAtm += engine.AtmosphericIsp;
+                    ispCount++;
+                }
+            }
+
+            float avgIspVac = ispCount > 0 ? totalIspVac / ispCount : 0f;
+            float avgIspAtm = ispCount > 0 ? totalIspAtm / ispCount : 0f;
+
+            return new EngineSummaryAggregate(
+                total: Engines.Count,
+                solidCount: solidCount,
+                liquidCount: liquidCount,
+                nuclearCount: nuclearCount,
+                avgIspVac: avgIspVac,
+                avgIspAtm: avgIspAtm
+            );
+        }
+
+        /// <summary>
+        /// Classify engine type based on propellants and behavior.
+        /// </summary>
+        private static EngineType ClassifyEngineType(EngineSummary engine)
+        {
+            if (engine == null || engine.Propellants == null)
+                return EngineType.Liquid;
+
+            // Solid rockets are throttle-locked and use SolidFuel
+            if (engine.IsThrottleLocked)
+            {
+                foreach (var prop in engine.Propellants)
+                {
+                    if (prop == "SolidFuel")
+                        return EngineType.Solid;
+                }
+            }
+
+            // Nuclear engines use LiquidFuel but no Oxidizer, and have very high vacuum ISP
+            bool hasLiquidFuel = false;
+            bool hasOxidizer = false;
+            foreach (var prop in engine.Propellants)
+            {
+                if (prop == "LiquidFuel") hasLiquidFuel = true;
+                if (prop == "Oxidizer") hasOxidizer = true;
+            }
+
+            if (hasLiquidFuel && !hasOxidizer && engine.VacuumIsp > 500)
+            {
+                return EngineType.Nuclear;
+            }
+
+            return EngineType.Liquid;
+        }
+
         private static string JsonEscape(string value)
         {
             if (string.IsNullOrEmpty(value)) return "";
@@ -320,6 +513,63 @@ namespace KSPCapcom.Editor
                 .Replace("\n", "\\n")
                 .Replace("\r", "\\r")
                 .Replace("\t", "\\t");
+        }
+    }
+
+    /// <summary>
+    /// Engine type classification for aggregation.
+    /// </summary>
+    public enum EngineType
+    {
+        Liquid,
+        Solid,
+        Nuclear
+    }
+
+    /// <summary>
+    /// Aggregated engine statistics for craft metrics.
+    /// </summary>
+    public class EngineSummaryAggregate
+    {
+        public int Total { get; }
+        public int SolidCount { get; }
+        public int LiquidCount { get; }
+        public int NuclearCount { get; }
+        public float AvgIspVac { get; }
+        public float AvgIspAtm { get; }
+
+        public EngineSummaryAggregate(
+            int total,
+            int solidCount,
+            int liquidCount,
+            int nuclearCount,
+            float avgIspVac,
+            float avgIspAtm)
+        {
+            Total = total;
+            SolidCount = solidCount;
+            LiquidCount = liquidCount;
+            NuclearCount = nuclearCount;
+            AvgIspVac = avgIspVac;
+            AvgIspAtm = avgIspAtm;
+        }
+
+        public static readonly EngineSummaryAggregate Empty = new EngineSummaryAggregate(0, 0, 0, 0, 0f, 0f);
+
+        public bool IsEmpty => Total == 0;
+
+        public string ToJson()
+        {
+            var sb = new StringBuilder();
+            sb.Append("{");
+            sb.Append($"\"total\":{Total}");
+            sb.Append($",\"solid\":{SolidCount}");
+            sb.Append($",\"liquid\":{LiquidCount}");
+            sb.Append($",\"nuclear\":{NuclearCount}");
+            sb.Append($",\"avgIspVac\":{AvgIspVac.ToString(System.Globalization.CultureInfo.InvariantCulture)}");
+            sb.Append($",\"avgIspAtm\":{AvgIspAtm.ToString(System.Globalization.CultureInfo.InvariantCulture)}");
+            sb.Append("}");
+            return sb.ToString();
         }
     }
 }

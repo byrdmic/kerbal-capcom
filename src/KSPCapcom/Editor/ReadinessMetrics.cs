@@ -51,6 +51,103 @@ namespace KSPCapcom.Editor
             sb.Append(Staging.ToPromptLine());
             return sb.ToString();
         }
+
+        /// <summary>
+        /// Generate a structured JSON block for reliable LLM parsing.
+        /// Contains TWR, delta-V, control authority, and staging warnings.
+        /// </summary>
+        /// <param name="context">Context identifier: "editor" or "flight"</param>
+        /// <param name="stageCount">Number of stages in the craft</param>
+        /// <returns>JSON object string (without code fence wrapper)</returns>
+        public string ToJsonBlock(string context, int stageCount)
+        {
+            var sb = new StringBuilder();
+            sb.Append("{");
+
+            // Context field
+            sb.Append($"\"context\":\"{JsonEscape(context ?? "unknown")}\"");
+
+            // TWR section
+            sb.Append(",\"twr\":");
+            if (TWR.IsAvailable)
+            {
+                sb.Append("{");
+                sb.Append($"\"asl\":{TWR.AtmosphericTWR.ToString(System.Globalization.CultureInfo.InvariantCulture)}");
+                sb.Append($",\"vacuum\":{TWR.VacuumTWR.ToString(System.Globalization.CultureInfo.InvariantCulture)}");
+                sb.Append($",\"engineCount\":{TWR.EngineCount}");
+                sb.Append($",\"canLaunchFromKerbin\":{(TWR.CanLaunchFromKerbin ? "true" : "false")}");
+                sb.Append("}");
+            }
+            else
+            {
+                sb.Append("null");
+            }
+
+            // Delta-V section
+            sb.Append(",\"deltaV\":");
+            if (DeltaV.IsAvailable)
+            {
+                sb.Append("{");
+                sb.Append($"\"total\":{DeltaV.TotalDeltaV.ToString(System.Globalization.CultureInfo.InvariantCulture)}");
+                sb.Append($",\"stageCount\":{stageCount}");
+                sb.Append(",\"perStage\":null"); // Future enhancement
+                sb.Append("}");
+            }
+            else
+            {
+                sb.Append("null");
+            }
+
+            // Control authority
+            sb.Append(",\"controlAuthority\":");
+            if (ControlAuthority.IsAvailable)
+            {
+                string statusStr;
+                switch (ControlAuthority.Status)
+                {
+                    case ControlAuthorityStatus.Good:
+                        statusStr = "good";
+                        break;
+                    case ControlAuthorityStatus.Marginal:
+                        statusStr = "marginal";
+                        break;
+                    default:
+                        statusStr = "none";
+                        break;
+                }
+                sb.Append($"\"{statusStr}\"");
+            }
+            else
+            {
+                sb.Append("null");
+            }
+
+            // Staging warnings
+            sb.Append(",\"stagingWarnings\":[");
+            if (Staging.HasWarnings)
+            {
+                for (int i = 0; i < Staging.Warnings.Count; i++)
+                {
+                    if (i > 0) sb.Append(",");
+                    sb.Append($"\"{JsonEscape(Staging.Warnings[i])}\"");
+                }
+            }
+            sb.Append("]");
+
+            sb.Append("}");
+            return sb.ToString();
+        }
+
+        private static string JsonEscape(string value)
+        {
+            if (string.IsNullOrEmpty(value)) return "";
+            return value
+                .Replace("\\", "\\\\")
+                .Replace("\"", "\\\"")
+                .Replace("\n", "\\n")
+                .Replace("\r", "\\r")
+                .Replace("\t", "\\t");
+        }
     }
 
     /// <summary>

@@ -387,7 +387,7 @@ namespace KSPCapcom
                 var craftContext = BuildCraftContext();
                 if (!string.IsNullOrEmpty(craftContext))
                 {
-                    parts.Add("CURRENT CRAFT:\n" + craftContext);
+                    parts.Add(craftContext);
                 }
 #endif
 
@@ -408,9 +408,10 @@ namespace KSPCapcom
 #if KSP_PRESENT
         /// <summary>
         /// Build craft context for inclusion in prompts when in the editor.
-        /// Returns an empty string if not in editor or no craft is available.
+        /// Returns structured JSON metrics block plus human-readable summary.
+        /// Returns unavailability marker if not in editor or no craft is loaded.
         /// </summary>
-        /// <returns>Craft context summary, or empty string if unavailable.</returns>
+        /// <returns>Craft context with JSON metrics block, or unavailability marker.</returns>
         public string BuildCraftContext()
         {
             try
@@ -418,28 +419,43 @@ namespace KSPCapcom
                 // Only provide craft context when in editor
                 if (!HighLogic.LoadedSceneIsEditor)
                 {
-                    return string.Empty;
+                    return "CRAFT METRICS: Not available (not in editor)";
                 }
 
                 // Get the current snapshot from the monitor
                 var monitor = EditorCraftMonitor.Instance;
                 if (monitor == null)
                 {
-                    return string.Empty;
+                    return "CRAFT METRICS: Not available (editor monitor not initialized)";
                 }
 
                 var snapshot = monitor.CurrentSnapshot;
                 if (snapshot == null || snapshot.IsEmpty)
                 {
-                    return string.Empty;
+                    return "CRAFT METRICS: Not available (no craft loaded)";
                 }
 
-                return snapshot.ToPromptSummary();
+                // Build combined context with JSON block for structured data
+                // and human-readable summary for context
+                var sb = new StringBuilder();
+
+                // Add the structured JSON metrics block
+                var metricsBlock = snapshot.ToCraftMetricsBlock();
+                if (!string.IsNullOrEmpty(metricsBlock))
+                {
+                    sb.AppendLine(metricsBlock);
+                    sb.AppendLine();
+                }
+
+                // Add human-readable summary
+                sb.Append(snapshot.ToPromptSummary());
+
+                return sb.ToString();
             }
             catch (Exception ex)
             {
                 CapcomCore.LogWarning($"PromptBuilder.BuildCraftContext failed: {ex.Message}");
-                return string.Empty;
+                return "CRAFT METRICS: Not available (error retrieving metrics)";
             }
         }
 #endif
