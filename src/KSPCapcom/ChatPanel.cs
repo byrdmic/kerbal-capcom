@@ -97,12 +97,14 @@ namespace KSPCapcom
         private GUIStyle _queueCountStyle;
         private GUIStyle _queuedMessageStyle;
         private GUIStyle _critiqueButtonStyle;
+        private GUIStyle _jumpToLatestStyle;
 
         // Auto-scroll management
         private bool _shouldAutoScroll = true;
         private float _lastScrollViewHeight;
         private float _lastContentHeight;
         private bool _pendingScrollToBottom;
+        private int _unseenMessageCount;
 
         /// <summary>
         /// Whether the chat panel is currently visible.
@@ -546,6 +548,15 @@ namespace KSPCapcom
             _critiqueButtonStyle.normal.textColor = new Color(0.4f, 0.8f, 1.0f);
             _critiqueButtonStyle.hover.textColor = new Color(0.6f, 0.9f, 1.0f);
 
+            // Jump to latest button style
+            _jumpToLatestStyle = new GUIStyle(HighLogic.Skin.button)
+            {
+                fontSize = 11,
+                padding = new RectOffset(8, 8, 4, 4),
+                alignment = TextAnchor.MiddleCenter
+            };
+            _jumpToLatestStyle.normal.textColor = new Color(0.8f, 0.9f, 1.0f);
+
             _stylesInitialized = true;
         }
 
@@ -831,8 +842,41 @@ namespace KSPCapcom
                 if (distanceFromBottom <= SCROLL_BOTTOM_THRESHOLD)
                 {
                     _shouldAutoScroll = true;
+                    _unseenMessageCount = 0;
                 }
             }
+
+            // Jump to latest affordance (visible when auto-scroll is off)
+            DrawJumpToLatestButton();
+        }
+
+        /// <summary>
+        /// Draw the "Jump to latest" button when auto-scroll is disengaged.
+        /// Shows unseen message count if any new messages arrived.
+        /// </summary>
+        private void DrawJumpToLatestButton()
+        {
+            if (_shouldAutoScroll)
+            {
+                return;
+            }
+
+            GUILayout.BeginHorizontal();
+            GUILayout.FlexibleSpace();
+
+            string label = _unseenMessageCount > 0
+                ? $"↓ Jump to latest ({_unseenMessageCount})"
+                : "↓ Jump to latest";
+
+            if (GUILayout.Button(label, _jumpToLatestStyle, GUILayout.ExpandWidth(false)))
+            {
+                ScrollToBottom();
+                _shouldAutoScroll = true;
+                _unseenMessageCount = 0;
+            }
+
+            GUILayout.FlexibleSpace();
+            GUILayout.EndHorizontal();
         }
 
         private void DrawMessage(ChatMessage message)
@@ -1304,6 +1348,10 @@ namespace KSPCapcom
             {
                 ScrollToBottom();
             }
+            else
+            {
+                _unseenMessageCount++;
+            }
             CapcomCore.Log($"[Assistant] {text}");
         }
 
@@ -1318,6 +1366,10 @@ namespace KSPCapcom
             if (_shouldAutoScroll)
             {
                 ScrollToBottom();
+            }
+            else
+            {
+                _unseenMessageCount++;
             }
             CapcomCore.Log($"[System] {text}");
         }
@@ -1341,6 +1393,7 @@ namespace KSPCapcom
             _messages.Clear();
             _scrollPosition = Vector2.zero;
             _shouldAutoScroll = true;
+            _unseenMessageCount = 0;
             CapcomCore.Log("Chat history cleared");
         }
 
