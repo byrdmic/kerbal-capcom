@@ -75,6 +75,12 @@ namespace KSPCapcom
         private int _focusInputFrames;
         private const int FOCUS_FRAME_COUNT = 3;
 
+        // Command history navigation
+        private const int MAX_COMMAND_HISTORY = 50;
+        private readonly List<string> _commandHistory = new List<string>();
+        private int _historyIndex = -1;           // -1 = not navigating, 0..N = position in history
+        private string _workingCopy = "";         // Preserved draft when user starts navigating
+
         // Settings UI state
         private readonly CapcomSettings _settings;
         private readonly SecretStore _secrets;
@@ -949,6 +955,18 @@ namespace KSPCapcom
                         e.Use();
                     }
                 }
+                // Handle Up arrow for history navigation
+                else if (e.keyCode == KeyCode.UpArrow && !e.shift)
+                {
+                    NavigateHistoryUp();
+                    e.Use();
+                }
+                // Handle Down arrow for history navigation
+                else if (e.keyCode == KeyCode.DownArrow && !e.shift)
+                {
+                    NavigateHistoryDown();
+                    e.Use();
+                }
             }
 
             GUILayout.BeginHorizontal();
@@ -969,9 +987,17 @@ namespace KSPCapcom
             }
             float inputHeight = Mathf.Min(20f + (lineCount - 1) * 16f, MAX_INPUT_HEIGHT);
 
-            _inputText = GUILayout.TextArea(_inputText, _inputStyle,
+            string newInput = GUILayout.TextArea(_inputText, _inputStyle,
                 GUILayout.ExpandWidth(true),
                 GUILayout.Height(inputHeight));
+
+            // Detect if user manually edited (not from history navigation)
+            if (newInput != _inputText && _historyIndex != -1)
+            {
+                // User typed while navigating - exit history mode
+                ResetHistoryNavigation();
+            }
+            _inputText = newInput;
 
             // Focus AFTER drawing, with guard against stealing from settings fields
             if (_focusInputFrames > 0)
@@ -1058,6 +1084,9 @@ namespace KSPCapcom
 
             // Clear input immediately
             _inputText = "";
+
+            // Add to command history
+            AddToHistory(text);
 
             // Re-focus input after sending
             _focusInputFrames = FOCUS_FRAME_COUNT;
@@ -1295,6 +1324,97 @@ namespace KSPCapcom
             _scrollPosition = Vector2.zero;
             _shouldAutoScroll = true;
             CapcomCore.Log("Chat history cleared");
+        }
+
+        /// <summary>
+        /// Add a command to the history ring buffer.
+        /// Skips empty/whitespace strings and consecutive duplicates.
+        /// </summary>
+        private void AddToHistory(string command)
+        {
+            if (string.IsNullOrWhiteSpace(command))
+            {
+                return;
+            }
+
+            // Skip consecutive duplicates
+            if (_commandHistory.Count > 0 &&
+                _commandHistory[_commandHistory.Count - 1] == command)
+            {
+                return;
+            }
+
+            _commandHistory.Add(command);
+
+            // Trim if exceeds capacity (remove oldest)
+            while (_commandHistory.Count > MAX_COMMAND_HISTORY)
+            {
+                _commandHistory.RemoveAt(0);
+            }
+
+            // Reset navigation state
+            _historyIndex = -1;
+            _workingCopy = "";
+        }
+
+        /// <summary>
+        /// Navigate to older command in history (Up arrow).
+        /// </summary>
+        private void NavigateHistoryUp()
+        {
+            if (_commandHistory.Count == 0)
+            {
+                return;
+            }
+
+            if (_historyIndex == -1)
+            {
+                // First Up press - save current input and go to newest history entry
+                _workingCopy = _inputText;
+                _historyIndex = _commandHistory.Count - 1;
+            }
+            else if (_historyIndex > 0)
+            {
+                // Navigate to older entry
+                _historyIndex--;
+            }
+            // else: already at oldest, stay there
+
+            _inputText = _commandHistory[_historyIndex];
+        }
+
+        /// <summary>
+        /// Navigate to newer command in history (Down arrow).
+        /// </summary>
+        private void NavigateHistoryDown()
+        {
+            if (_historyIndex == -1)
+            {
+                // Not navigating, nothing to do
+                return;
+            }
+
+            if (_historyIndex < _commandHistory.Count - 1)
+            {
+                // Navigate to newer entry
+                _historyIndex++;
+                _inputText = _commandHistory[_historyIndex];
+            }
+            else
+            {
+                // At newest entry, return to working copy
+                _historyIndex = -1;
+                _inputText = _workingCopy;
+            }
+        }
+
+        /// <summary>
+        /// Reset history navigation state (when user manually edits).
+        /// </summary>
+        private void ResetHistoryNavigation()
+        {
+            _historyIndex = -1;
+            _workingCopy = "";
         }
 
         /// <summary>
