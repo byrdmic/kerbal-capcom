@@ -885,40 +885,70 @@ namespace KSPCapcom
             GUILayout.EndHorizontal();
         }
 
+        /// <summary>
+        /// Draw the input area with state-aware keyboard handling.
+        ///
+        /// Input State Machine:
+        /// | State              | Conditions                          | Enter           | Shift+Enter | Escape           |
+        /// |--------------------|-------------------------------------|-----------------|-------------|------------------|
+        /// | GENERATING         | IsWaitingForResponse == true        | Send (queues)   | Newline     | Cancel request   |
+        /// | IDLE_WITH_INPUT    | Not generating, input non-empty     | Send            | Newline     | Clear input      |
+        /// | IDLE_EMPTY         | Not generating, input empty         | No-op           | Newline     | Close panel      |
+        ///
+        /// Escape behavior uses progressive dismissal: first clears input, then closes panel.
+        /// </summary>
         private void DrawInputArea()
         {
             // Handle keyboard input before drawing
-            // Check for Enter key to send (without Shift) or Shift+Enter for newline
             bool shouldSend = false;
             Event e = Event.current;
 
-            if (e.type == EventType.KeyDown && e.keyCode == KeyCode.Return)
+            // Only handle keyboard events when ChatInput has focus
+            if (e.type == EventType.KeyDown && GUI.GetNameOfFocusedControl() == "ChatInput")
             {
-                if (GUI.GetNameOfFocusedControl() == "ChatInput")
+                // Determine current state
+                bool isGenerating = IsWaitingForResponse;
+                bool hasInput = !string.IsNullOrWhiteSpace(_inputText);
+
+                // Handle Enter key
+                if (e.keyCode == KeyCode.Return)
                 {
                     if (e.shift)
                     {
-                        // Shift+Enter: Insert newline (handled naturally by TextArea)
-                        // Don't consume the event, let TextArea handle it
+                        // Shift+Enter: let TextArea handle newline naturally
+                    }
+                    else if (hasInput)
+                    {
+                        // Send (or queue if generating)
+                        shouldSend = true;
+                        e.Use();
+                    }
+                }
+                // Handle Escape key
+                else if (e.keyCode == KeyCode.Escape)
+                {
+                    if (isGenerating)
+                    {
+                        // GENERATING: Cancel request
+                        CancelCurrentRequest();
+                        CapcomCore.Log("User cancelled request via Escape key");
+                        e.Use();
+                    }
+                    else if (hasInput)
+                    {
+                        // IDLE_WITH_INPUT: Clear input
+                        _inputText = "";
+                        CapcomCore.Log("User cleared input via Escape key");
+                        e.Use();
                     }
                     else
                     {
-                        // Enter without Shift: Send message
-                        if (!string.IsNullOrWhiteSpace(_inputText))
-                        {
-                            shouldSend = true;
-                            e.Use(); // Consume the event to prevent newline insertion
-                        }
+                        // IDLE_EMPTY: Close panel
+                        Hide();
+                        CapcomCore.Log("User closed panel via Escape key");
+                        e.Use();
                     }
                 }
-            }
-
-            // Handle Escape key to cancel pending request
-            if (e.type == EventType.KeyDown && e.keyCode == KeyCode.Escape && IsWaitingForResponse)
-            {
-                CancelCurrentRequest();
-                CapcomCore.Log("User cancelled request via Escape key");
-                e.Use();
             }
 
             GUILayout.BeginHorizontal();
