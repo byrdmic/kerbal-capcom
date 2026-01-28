@@ -100,7 +100,7 @@ namespace KSPCapcom.Responders
                 // Check for cancellation
                 if (cancellationToken.IsCancellationRequested)
                 {
-                    return ResponderResult.Fail("Request cancelled");
+                    return ResponderResult.Fail("Request cancelled", LLMError.Cancelled());
                 }
 
                 // Check if streaming should be used (disabled for tool calls after first iteration)
@@ -132,7 +132,7 @@ namespace KSPCapcom.Responders
                 // Check for errors
                 if (!response.Success)
                 {
-                    return ResponderResult.Fail(GetUserFriendlyError(response.Error));
+                    return ResponderResult.Fail(GetUserFriendlyError(response.Error), response.Error);
                 }
 
                 // Check if we have tool calls to process

@@ -1,9 +1,11 @@
 using System;
 using System.Collections.Generic;
+using System.Text;
 using System.Threading;
 using UnityEngine;
 using KSPCapcom.Critique;
 using KSPCapcom.Editor;
+using KSPCapcom.LLM;
 using KSPCapcom.Responders;
 
 namespace KSPCapcom
@@ -145,6 +147,11 @@ namespace KSPCapcom
 
         // Request timing for generating indicator
         private DateTime _requestStartTime;
+
+        // Error message tracking for expandable details
+        private readonly Dictionary<int, ErrorMessageData> _errorMessageData = new Dictionary<int, ErrorMessageData>();
+        private readonly HashSet<int> _expandedErrorIds = new HashSet<int>();
+        private int _nextErrorId = 0;
 
         /// <summary>
         /// Whether the chat panel is currently visible.
@@ -417,10 +424,11 @@ namespace KSPCapcom
                 }
                 else
                 {
-                    // Replace pending with error
+                    // Replace pending with error (with expandable details)
                     _messages.Remove(_pendingMessage);
-                    var errorColor = GetErrorColor(result.ErrorMessage);
-                    AddSystemMessage($"<color={errorColor}>Error: {result.ErrorMessage}</color>");
+                    var elapsed = (DateTime.UtcNow - _requestStartTime).TotalSeconds;
+                    var errorData = BuildErrorMessageData(result.Error, elapsed);
+                    AddErrorMessage(errorData);
                     CapcomCore.LogError($"Critique error: {result.ErrorMessage}");
                 }
                 _pendingMessage = null;
@@ -942,6 +950,13 @@ namespace KSPCapcom
 
         private void DrawMessage(ChatMessage message)
         {
+            // Handle error messages with expandable details
+            if (message.IsErrorMessage && _errorMessageData.TryGetValue(message.ErrorId, out var errorData))
+            {
+                DrawErrorMessage(message, errorData);
+                return;
+            }
+
             GUIStyle style;
             string prefix;
             bool alignRight;
@@ -1314,10 +1329,11 @@ namespace KSPCapcom
                 }
                 else
                 {
-                    // Replace pending with error message
+                    // Replace pending with error message (with expandable details)
                     _messages.Remove(_pendingMessage);
-                    var errorColor = GetErrorColor(result.ErrorMessage);
-                    AddSystemMessage($"<color={errorColor}>Error: {result.ErrorMessage}</color>");
+                    var elapsed = (DateTime.UtcNow - _requestStartTime).TotalSeconds;
+                    var errorData = BuildErrorMessageData(result.Error, elapsed);
+                    AddErrorMessage(errorData);
                     CapcomCore.LogError($"Responder error: {result.ErrorMessage}");
                 }
                 _pendingMessage = null;
@@ -1329,8 +1345,10 @@ namespace KSPCapcom
             }
             else
             {
-                var errorColor = GetErrorColor(result.ErrorMessage);
-                AddSystemMessage($"<color={errorColor}>Error: {result.ErrorMessage}</color>");
+                // No pending message error case
+                var elapsed = (DateTime.UtcNow - _requestStartTime).TotalSeconds;
+                var errorData = BuildErrorMessageData(result.Error, elapsed);
+                AddErrorMessage(errorData);
                 CapcomCore.LogError($"Responder error: {result.ErrorMessage}");
             }
 
@@ -1398,6 +1416,151 @@ namespace KSPCapcom
             return HEX_ERROR;
         }
 
+        #region Error Message Rendering
+
+        /// <summary>
+        /// Build error message data from an LLMError for UI rendering.
+        /// </summary>
+        private ErrorMessageData BuildErrorMessageData(LLMError error, double elapsedSeconds)
+        {
+            var data = new ErrorMessageData
+            {
+                IsCancellation = error?.Type == LLMErrorType.Cancelled,
+                IsRetryable = error?.IsRetryable ?? false,
+            };
+
+            if (data.IsCancellation)
+            {
+                data.ShortMessage = "Request cancelled";
+                data.HasDetails = false;  // No details for user-initiated cancel
+                return data;
+            }
+
+            data.ShortMessage = error != null
+                ? ErrorMapper.GetUserFriendlyMessage(error)
+                : "An error occurred";
+            data.HasDetails = error != null && error.Type != LLMErrorType.None;
+
+            // Build sanitized technical details
+            if (data.HasDetails)
+            {
+                var sb = new StringBuilder();
+                sb.AppendLine($"Type: {error.Type}");
+                if (!string.IsNullOrEmpty(error.ProviderCode))
+                    sb.AppendLine($"Code: {SanitizeProviderCode(error.ProviderCode)}");
+                sb.AppendLine($"Timing: {elapsedSeconds:F1}s");
+                if (error.IsRetryable && error.SuggestedRetryDelayMs > 0)
+                    sb.AppendLine($"Suggested retry: {error.SuggestedRetryDelayMs}ms");
+                data.TechnicalDetails = sb.ToString().TrimEnd();
+            }
+
+            return data;
+        }
+
+        /// <summary>
+        /// Sanitize provider error codes to prevent leaking secrets.
+        /// </summary>
+        private string SanitizeProviderCode(string code)
+        {
+            if (string.IsNullOrEmpty(code))
+                return code;
+
+            // Redact anything that looks like a token/key (long alphanumeric without spaces)
+            if (code.Length > 20 && !code.Contains(" "))
+                return "[redacted]";
+
+            return code;
+        }
+
+        /// <summary>
+        /// Add an error message with expandable details.
+        /// </summary>
+        private void AddErrorMessage(ErrorMessageData errorData)
+        {
+            int errorId = _nextErrorId++;
+            var message = ChatMessage.FromError(errorData.ShortMessage, errorId);
+            _messages.Add(message);
+            _errorMessageData[errorId] = errorData;
+            TrimMessageHistory();
+            if (_shouldAutoScroll)
+            {
+                ScrollToBottom();
+            }
+            else
+            {
+                _unseenMessageCount++;
+            }
+            CapcomCore.Log($"[Error] {errorData.ShortMessage}");
+        }
+
+        /// <summary>
+        /// Draw an error message with optional expandable details.
+        /// </summary>
+        private void DrawErrorMessage(ChatMessage message, ErrorMessageData errorData)
+        {
+            // Pick color based on error type
+            Color textColor;
+            if (errorData.IsCancellation || errorData.IsRetryable)
+                textColor = COLOR_WARNING;  // Orange for cancel/retryable
+            else
+                textColor = COLOR_ERROR;    // Red for fatal
+
+            GUILayout.BeginHorizontal();
+
+            // Error messages are left-aligned like system messages
+            GUILayout.BeginVertical(HighLogic.Skin.box, GUILayout.MaxWidth(_windowRect.width * 0.85f));
+
+            // Timestamp
+            GUILayout.Label(FormatTimestamp(message.Timestamp), _systemMessageStyle);
+
+            // Short message with appropriate color
+            var errorStyle = new GUIStyle(_systemMessageStyle);
+            errorStyle.normal.textColor = textColor;
+            GUILayout.Label(errorData.ShortMessage, errorStyle);
+
+            // Details disclosure (if available and not cancellation)
+            if (errorData.HasDetails)
+            {
+                bool isExpanded = _expandedErrorIds.Contains(message.ErrorId);
+                string disclosureLabel = isExpanded ? "▼ Details" : "▶ Details";
+
+                var disclosureStyle = new GUIStyle(HighLogic.Skin.button)
+                {
+                    fontSize = FONT_SIZE_SMALL,
+                    padding = new RectOffset(4, 4, 2, 2)
+                };
+                disclosureStyle.normal.textColor = COLOR_MUTED;
+
+                if (GUILayout.Button(disclosureLabel, disclosureStyle, GUILayout.ExpandWidth(false)))
+                {
+                    if (isExpanded)
+                        _expandedErrorIds.Remove(message.ErrorId);
+                    else
+                        _expandedErrorIds.Add(message.ErrorId);
+                }
+
+                // Expanded details section
+                if (isExpanded)
+                {
+                    var detailsStyle = new GUIStyle(_messageStyle)
+                    {
+                        fontSize = FONT_SIZE_SMALL
+                    };
+                    detailsStyle.normal.textColor = COLOR_MUTED;
+
+                    GUILayout.BeginVertical(HighLogic.Skin.box);
+                    GUILayout.Label(errorData.TechnicalDetails, detailsStyle);
+                    GUILayout.EndVertical();
+                }
+            }
+
+            GUILayout.EndVertical();
+            GUILayout.FlexibleSpace();
+            GUILayout.EndHorizontal();
+        }
+
+        #endregion
+
         /// <summary>
         /// Add a message from the user.
         /// </summary>
@@ -1460,6 +1623,8 @@ namespace KSPCapcom
         public void ClearHistory()
         {
             _messages.Clear();
+            _errorMessageData.Clear();
+            _expandedErrorIds.Clear();
             _scrollPosition = Vector2.zero;
             _shouldAutoScroll = true;
             _unseenMessageCount = 0;
@@ -1712,6 +1877,16 @@ namespace KSPCapcom
         public bool WasDropped { get; private set; }
 
         /// <summary>
+        /// Whether this message is an error message with expandable details.
+        /// </summary>
+        public bool IsErrorMessage { get; set; }
+
+        /// <summary>
+        /// Unique identifier for error messages (used for detail expansion tracking).
+        /// </summary>
+        public int ErrorId { get; set; }
+
+        /// <summary>
         /// Convenience property for backward compatibility.
         /// </summary>
         public bool IsFromUser => Role == MessageRole.User;
@@ -1769,5 +1944,29 @@ namespace KSPCapcom
 
         public static ChatMessage FromSystem(string text) =>
             new ChatMessage(text, MessageRole.System);
+
+        public static ChatMessage FromError(string text, int errorId) =>
+            new ChatMessage(text, MessageRole.System) { IsErrorMessage = true, ErrorId = errorId };
+    }
+
+    /// <summary>
+    /// Data for rendering error messages with optional expandable details.
+    /// </summary>
+    public struct ErrorMessageData
+    {
+        /// <summary>Short, user-facing error headline.</summary>
+        public string ShortMessage;
+
+        /// <summary>Technical details (error type, timing, provider code).</summary>
+        public string TechnicalDetails;
+
+        /// <summary>Whether the error is retryable (affects color: orange vs red).</summary>
+        public bool IsRetryable;
+
+        /// <summary>Whether this was a user-initiated cancellation.</summary>
+        public bool IsCancellation;
+
+        /// <summary>Whether technical details are available.</summary>
+        public bool HasDetails;
     }
 }

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading;
+using KSPCapcom.LLM;
 using KSPCapcom.Validation;
 
 namespace KSPCapcom.Responders
@@ -20,6 +21,12 @@ namespace KSPCapcom.Responders
         public string ErrorMessage { get; }
 
         /// <summary>
+        /// Structured error information for detailed error rendering.
+        /// Null for successful responses or legacy error paths.
+        /// </summary>
+        public LLMError Error { get; }
+
+        /// <summary>
         /// Validation result for kOS identifiers in the response.
         /// Null if validation was not performed.
         /// </summary>
@@ -30,12 +37,13 @@ namespace KSPCapcom.Responders
         /// </summary>
         public bool HasValidationWarnings => ValidationResult?.HasUnverifiedIdentifiers ?? false;
 
-        private ResponderResult(string text, bool success, string errorMessage, KosValidationResult validationResult = null)
+        private ResponderResult(string text, bool success, string errorMessage, KosValidationResult validationResult = null, LLMError error = null)
         {
             Text = text;
             Success = success;
             ErrorMessage = errorMessage;
             ValidationResult = validationResult;
+            Error = error;
         }
 
         public static ResponderResult Ok(string text) =>
@@ -45,7 +53,10 @@ namespace KSPCapcom.Responders
             new ResponderResult(text, true, null, validationResult);
 
         public static ResponderResult Fail(string errorMessage) =>
-            new ResponderResult(null, false, errorMessage, null);
+            new ResponderResult(null, false, errorMessage, null, null);
+
+        public static ResponderResult Fail(string errorMessage, LLMError error) =>
+            new ResponderResult(null, false, errorMessage, null, error);
     }
 
     /// <summary>
