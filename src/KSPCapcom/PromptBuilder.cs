@@ -36,7 +36,7 @@ namespace KSPCapcom
         /// Increment when making significant changes to prompt structure or content.
         /// Format: Major.Minor.Patch (semantic versioning)
         /// </summary>
-        public const string PromptVersion = "1.3.0";
+        public const string PromptVersion = "1.4.0";
 
         /// <summary>
         /// Core CAPCOM identity and voice guidance.
@@ -150,6 +150,28 @@ namespace KSPCapcom
             "Include inline comments for user-adjustable values (turn altitude, target apoapsis).";
 
         /// <summary>
+        /// Script output formatting rules for clean, copy-ready kOS scripts.
+        /// Applied when generating kOS scripts (grounded mode or editor context).
+        /// </summary>
+        private const string ScriptOutputFormatting =
+            "SCRIPT OUTPUT FORMAT:\n" +
+            "When generating kOS scripts, follow these formatting rules:\n\n" +
+            "1. CODE BLOCK:\n" +
+            "   - Use exactly ONE fenced code block tagged with ```kos\n" +
+            "   - The code block must be directly copyable to a .ks file\n" +
+            "   - Use ASCII characters only - no smart quotes, Unicode bullets, or special characters\n\n" +
+            "2. HEADER COMMENT (at top of code block):\n" +
+            "   // Target: [target orbit or objective]\n" +
+            "   // Craft: [craft name if known] - TWR: [value], Mass: [value]\n" +
+            "   // User-adjustable values marked with // TUNE:\n\n" +
+            "3. INLINE COMMENTS:\n" +
+            "   - Mark tunable values with // TUNE: [purpose]\n" +
+            "   - Keep comments minimal and actionable\n\n" +
+            "4. REFERENCES SECTION:\n" +
+            "   - In grounded mode, the ## References section MUST appear AFTER the code block\n" +
+            "   - Never include references, citations, or non-code text inside the code block";
+
+        /// <summary>
         /// Warning when grounded mode is enabled but documentation is not loaded.
         /// </summary>
         private const string GroundedModeNoDocsWarning =
@@ -230,6 +252,39 @@ namespace KSPCapcom
 #else
             return string.Empty;
 #endif
+        }
+
+        /// <summary>
+        /// Get script output formatting guidance.
+        /// Included when generating kOS scripts (grounded mode or editor context).
+        /// </summary>
+        private string GetScriptOutputFormatting()
+        {
+            var settings = _getSettings();
+            bool hasGroundedMode = settings != null && settings.GroundedModeEnabled;
+
+#if KSP_PRESENT
+            bool hasEditorContext = false;
+            try
+            {
+                hasEditorContext = HighLogic.LoadedSceneIsEditor &&
+                    EditorCraftMonitor.Instance?.CurrentSnapshot != null &&
+                    !EditorCraftMonitor.Instance.CurrentSnapshot.IsEmpty;
+            }
+            catch { }
+
+            if (hasGroundedMode || hasEditorContext)
+            {
+                return ScriptOutputFormatting;
+            }
+#else
+            if (hasGroundedMode)
+            {
+                return ScriptOutputFormatting;
+            }
+#endif
+
+            return string.Empty;
         }
 
         private readonly Func<CapcomSettings> _getSettings;
@@ -327,6 +382,14 @@ namespace KSPCapcom
             if (!string.IsNullOrEmpty(ascentGuidance))
             {
                 builder.AppendLine(ascentGuidance);
+                builder.AppendLine();
+            }
+
+            // 5.6 Script output formatting (if generating kOS scripts)
+            string scriptFormatting = GetScriptOutputFormatting();
+            if (!string.IsNullOrEmpty(scriptFormatting))
+            {
+                builder.AppendLine(scriptFormatting);
                 builder.AppendLine();
             }
 
