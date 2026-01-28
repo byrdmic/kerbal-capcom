@@ -6,7 +6,10 @@ using UnityEngine;
 using KSPCapcom.Critique;
 using KSPCapcom.Editor;
 using KSPCapcom.LLM;
+using KSPCapcom.Parsing;
 using KSPCapcom.Responders;
+using KSPCapcom.UI;
+using KSPCapcom.Validation;
 
 namespace KSPCapcom
 {
@@ -152,6 +155,10 @@ namespace KSPCapcom
         private readonly Dictionary<int, ErrorMessageData> _errorMessageData = new Dictionary<int, ErrorMessageData>();
         private readonly HashSet<int> _expandedErrorIds = new HashSet<int>();
         private int _nextErrorId = 0;
+
+        // Code block parsing and rendering
+        private readonly CodeBlockParser _codeBlockParser = new CodeBlockParser();
+        private readonly ScriptCardRenderer _scriptCardRenderer = new ScriptCardRenderer();
 
         /// <summary>
         /// Whether the chat panel is currently visible.
@@ -420,6 +427,10 @@ namespace KSPCapcom
                         AddSystemMessage(FormatWarning("Critique completed but response was empty. Please try again."));
                         CapcomCore.LogWarning("Critique: Request succeeded but received empty response");
                     }
+
+                    // Parse the message for code blocks (only after completion)
+                    ParseAndValidateMessage(_pendingMessage);
+
                     CapcomCore.Log($"[Assistant] Critique complete");
                 }
                 else
@@ -957,6 +968,13 @@ namespace KSPCapcom
                 return;
             }
 
+            // Use parsed rendering for completed assistant messages with code blocks
+            if (!message.IsPending && message.HasCodeBlocks && message.Role == MessageRole.Assistant)
+            {
+                DrawParsedMessage(message);
+                return;
+            }
+
             GUIStyle style;
             string prefix;
             bool alignRight;
@@ -1025,6 +1043,45 @@ namespace KSPCapcom
                 GUILayout.FlexibleSpace();
             }
 
+            GUILayout.EndHorizontal();
+        }
+
+        /// <summary>
+        /// Draw a parsed message with interleaved prose and script cards.
+        /// </summary>
+        private void DrawParsedMessage(ChatMessage message)
+        {
+            GUILayout.BeginHorizontal();
+
+            // Assistant messages are left-aligned
+            GUILayout.BeginVertical(HighLogic.Skin.box, GUILayout.MaxWidth(_windowRect.width * 0.85f));
+
+            // Timestamp and prefix
+            GUILayout.Label(FormatTimestamp(message.Timestamp), _systemMessageStyle);
+            GUILayout.Label("<b>CAPCOM:</b>", _systemMessageStyle);
+
+            // Render each segment
+            float maxCardWidth = _windowRect.width * 0.8f;
+
+            foreach (var segment in message.ParsedContent.Segments)
+            {
+                if (segment is ProseSegment prose)
+                {
+                    // Render prose as normal text
+                    if (!string.IsNullOrWhiteSpace(prose.Content))
+                    {
+                        GUILayout.Label(prose.Content.Trim(), _systemMessageStyle);
+                    }
+                }
+                else if (segment is CodeBlockSegment codeBlock)
+                {
+                    // Render as script card
+                    _scriptCardRenderer.DrawScriptCard(codeBlock, maxCardWidth);
+                }
+            }
+
+            GUILayout.EndVertical();
+            GUILayout.FlexibleSpace();
             GUILayout.EndHorizontal();
         }
 
@@ -1325,6 +1382,10 @@ namespace KSPCapcom
                         // Streaming was used, text already updated
                         _pendingMessage.Complete();
                     }
+
+                    // Parse the message for code blocks (only after completion)
+                    ParseAndValidateMessage(_pendingMessage);
+
                     CapcomCore.Log($"[Assistant] {result.Text}");
                 }
                 else
@@ -1360,6 +1421,48 @@ namespace KSPCapcom
 
             // Process next queued message if any
             ProcessNextQueuedMessage();
+        }
+
+        /// <summary>
+        /// Parse a completed message for code blocks and run syntax validation.
+        /// </summary>
+        private void ParseAndValidateMessage(ChatMessage message)
+        {
+            if (message == null || string.IsNullOrEmpty(message.Text))
+            {
+                return;
+            }
+
+            try
+            {
+                // Parse the message content
+                var parsed = _codeBlockParser.Parse(message.Text);
+                message.SetParsedContent(parsed);
+
+                if (parsed.HasCodeBlocks)
+                {
+                    CapcomCore.Log($"ChatPanel: Parsed {parsed.CodeBlockCount} code block(s)");
+
+                    // Run syntax validation on each kOS code block
+                    var syntaxChecker = new KosSyntaxChecker();
+                    foreach (var segment in parsed.Segments)
+                    {
+                        if (segment is CodeBlockSegment codeBlock && codeBlock.IsKosLikely)
+                        {
+                            codeBlock.SyntaxResult = syntaxChecker.Check(codeBlock.RawCode);
+                            if (codeBlock.SyntaxResult.HasIssues)
+                            {
+                                CapcomCore.LogWarning($"ChatPanel: Code block has {codeBlock.SyntaxResult.Issues.Count} syntax issue(s)");
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                // Never break chat flow due to parsing failure
+                CapcomCore.LogWarning($"ChatPanel: Failed to parse message - {ex.Message}");
+            }
         }
 
         /// <summary>
@@ -1887,6 +1990,16 @@ namespace KSPCapcom
         public int ErrorId { get; set; }
 
         /// <summary>
+        /// Parsed content with code blocks and prose segments (set after completion).
+        /// </summary>
+        public ParsedMessageContent ParsedContent { get; private set; }
+
+        /// <summary>
+        /// Whether this message contains code blocks.
+        /// </summary>
+        public bool HasCodeBlocks => ParsedContent?.HasCodeBlocks ?? false;
+
+        /// <summary>
         /// Convenience property for backward compatibility.
         /// </summary>
         public bool IsFromUser => Role == MessageRole.User;
@@ -1931,6 +2044,14 @@ namespace KSPCapcom
         {
             IsQueued = false;
             WasDropped = true;
+        }
+
+        /// <summary>
+        /// Set the parsed content for this message (called after completion).
+        /// </summary>
+        public void SetParsedContent(ParsedMessageContent content)
+        {
+            ParsedContent = content;
         }
 
         public static ChatMessage FromUser(string text, bool isQueued = false) =>
