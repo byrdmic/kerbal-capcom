@@ -143,6 +143,9 @@ namespace KSPCapcom
         private bool _pendingScrollToBottom;
         private int _unseenMessageCount;
 
+        // Request timing for generating indicator
+        private DateTime _requestStartTime;
+
         /// <summary>
         /// Whether the chat panel is currently visible.
         /// </summary>
@@ -320,8 +323,9 @@ namespace KSPCapcom
             _messages.Add(_pendingMessage);
             ScrollToBottom();
 
-            // Create cancellation token
+            // Create cancellation token and track start time
             _currentRequestCts = new CancellationTokenSource();
+            _requestStartTime = DateTime.UtcNow;
 
             // Request critique
             _critiqueService.RequestCritique(
@@ -366,8 +370,9 @@ namespace KSPCapcom
             _messages.Add(_pendingMessage);
             ScrollToBottom();
 
-            // Create cancellation token
+            // Create cancellation token and track start time
             _currentRequestCts = new CancellationTokenSource();
+            _requestStartTime = DateTime.UtcNow;
 
             // Use the main responder with the canonical prompt
             _responder.Respond(
@@ -1022,6 +1027,14 @@ namespace KSPCapcom
         /// </summary>
         private void DrawInputArea()
         {
+            // Generating status indicator with elapsed time
+            if (IsWaitingForResponse)
+            {
+                var elapsed = (DateTime.UtcNow - _requestStartTime).TotalSeconds;
+                var statusText = $"Generating... ({elapsed:F0}s)";
+                GUILayout.Label(statusText, _statusLabelStyle);
+            }
+
             // Handle keyboard input before drawing
             bool shouldSend = false;
             Event e = Event.current;
@@ -1248,8 +1261,9 @@ namespace KSPCapcom
             _messages.Add(_pendingMessage);
             ScrollToBottom();
 
-            // Create cancellation token for this request (M2 ready)
+            // Create cancellation token for this request (M2 ready) and track start time
             _currentRequestCts = new CancellationTokenSource();
+            _requestStartTime = DateTime.UtcNow;
 
             // Pass conversation history, cancellation token, and streaming callback
             _responder.Respond(
