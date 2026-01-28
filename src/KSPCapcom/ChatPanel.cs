@@ -761,6 +761,15 @@ namespace KSPCapcom
 
         private void DrawMessagesArea()
         {
+            // Detect scroll wheel input to disengage auto-scroll
+            if (Event.current.type == EventType.ScrollWheel)
+            {
+                _shouldAutoScroll = false;
+            }
+
+            // Track scroll position before to detect user-initiated scrollbar drags
+            float scrollYBefore = _scrollPosition.y;
+
             // Begin scroll view and track positions for auto-scroll detection
             _scrollPosition = GUILayout.BeginScrollView(
                 _scrollPosition,
@@ -800,6 +809,12 @@ namespace KSPCapcom
 
             GUILayout.EndScrollView();
 
+            // Detect if user scrolled via scrollbar drag (position changed upward without pending scroll)
+            if (!_pendingScrollToBottom && _scrollPosition.y < scrollYBefore - 1f)
+            {
+                _shouldAutoScroll = false;
+            }
+
             // Handle pending scroll to bottom
             if (_pendingScrollToBottom && Event.current.type == EventType.Repaint)
             {
@@ -807,13 +822,16 @@ namespace KSPCapcom
                 _pendingScrollToBottom = false;
             }
 
-            // Detect if user has scrolled up (disable auto-scroll)
-            // If scroll position is near the bottom, keep auto-scroll enabled
+            // Detect if user has scrolled to bottom (re-engage auto-scroll)
+            // If scroll position is near the bottom, enable auto-scroll
             if (Event.current.type == EventType.Repaint && _lastContentHeight > _lastScrollViewHeight)
             {
                 float maxScroll = _lastContentHeight - _lastScrollViewHeight;
                 float distanceFromBottom = maxScroll - _scrollPosition.y;
-                _shouldAutoScroll = distanceFromBottom <= SCROLL_BOTTOM_THRESHOLD;
+                if (distanceFromBottom <= SCROLL_BOTTOM_THRESHOLD)
+                {
+                    _shouldAutoScroll = true;
+                }
             }
         }
 
@@ -1153,7 +1171,7 @@ namespace KSPCapcom
             if (_pendingMessage != null)
             {
                 _pendingMessage.UpdateText(accumulatedText);
-                ScrollToBottom();
+                ScrollToBottomIfAutoScroll();
             }
         }
 
@@ -1419,11 +1437,26 @@ namespace KSPCapcom
 
         /// <summary>
         /// Force scroll to the bottom of the message history.
+        /// Note: This does NOT re-engage auto-scroll. Auto-scroll re-engages
+        /// when the user manually scrolls back to the bottom.
         /// </summary>
         public void ScrollToBottom()
         {
             _pendingScrollToBottom = true;
-            _shouldAutoScroll = true;
+            // Note: Do NOT set _shouldAutoScroll = true here.
+            // Auto-scroll re-engages when user scrolls to bottom (detected in DrawMessagesArea).
+        }
+
+        /// <summary>
+        /// Scroll to bottom only if auto-scroll is currently engaged.
+        /// Use this during streaming to respect user's scroll position.
+        /// </summary>
+        private void ScrollToBottomIfAutoScroll()
+        {
+            if (_shouldAutoScroll)
+            {
+                _pendingScrollToBottom = true;
+            }
         }
 
         private void ClampWindowToScreen()
