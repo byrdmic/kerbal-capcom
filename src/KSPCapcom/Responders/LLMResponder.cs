@@ -261,7 +261,7 @@ namespace KSPCapcom.Responders
         }
 
         /// <summary>
-        /// Validate kOS identifiers in the response if grounded mode is enabled.
+        /// Validate kOS identifiers and syntax in the response if grounded mode is enabled.
         /// </summary>
         private KosValidationResult ValidateResponseIfNeeded(string content, DocEntryTracker docTracker)
         {
@@ -286,33 +286,51 @@ namespace KSPCapcom.Responders
                     return null;
                 }
 
+                // Run syntax check first
+                var syntaxChecker = new KosSyntaxChecker();
+                var syntaxResult = syntaxChecker.Check(codeContent);
+
+                // Log syntax check results
+                if (syntaxResult.HasIssues)
+                {
+                    CapcomCore.LogWarning($"LLMResponder: Syntax check found {syntaxResult.Issues.Count} issue(s)");
+                }
+
                 // Extract identifiers from the code
                 var extractor = new KosIdentifierExtractor();
                 var identifiers = extractor.Extract(codeContent);
 
+                KosValidationResult result;
+
                 if (identifiers.IsEmpty)
                 {
-                    return null;
+                    // No identifiers but we still want to report syntax issues
+                    result = new KosValidationResult();
+                }
+                else
+                {
+                    // Get doc entries for validation
+                    var docEntries = docTracker.GetAll();
+
+                    // Also add entries from semantic search in BuildUserContext (if any were retrieved)
+                    // The docTracker already captures tool call results
+
+                    // Create validator with retrieved docs and search index for suggestions
+                    var validator = new KosIdentifierValidator(docEntries, GetSearchIndex());
+
+                    // Validate identifiers
+                    result = validator.Validate(identifiers);
                 }
 
-                // Get doc entries for validation
-                var docEntries = docTracker.GetAll();
-
-                // Also add entries from semantic search in BuildUserContext (if any were retrieved)
-                // The docTracker already captures tool call results
-
-                // Create validator with retrieved docs and search index for suggestions
-                var validator = new KosIdentifierValidator(docEntries, GetSearchIndex());
-
-                // Validate
-                var result = validator.Validate(identifiers);
+                // Attach syntax result to validation result
+                result.SetSyntaxResult(syntaxResult);
 
                 // Log validation summary
                 if (result.HasUnverifiedIdentifiers)
                 {
                     CapcomCore.LogWarning($"LLMResponder: Validation found {result.Unverified.Count} unverified identifier(s)");
                 }
-                else
+                else if (result.Verified.Count > 0)
                 {
                     CapcomCore.Log($"LLMResponder: Validation passed - {result.Verified.Count} identifier(s) verified");
                 }

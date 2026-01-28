@@ -119,6 +119,21 @@ namespace KSPCapcom.Validation
         public string Warning { get; private set; }
 
         /// <summary>
+        /// Result of syntax checking, if performed.
+        /// </summary>
+        public KosSyntaxResult SyntaxResult { get; private set; }
+
+        /// <summary>
+        /// Whether there are any syntax issues detected.
+        /// </summary>
+        public bool HasSyntaxIssues => SyntaxResult?.HasIssues ?? false;
+
+        /// <summary>
+        /// Whether the script needs revision (has syntax issues or unverified identifiers).
+        /// </summary>
+        public bool NeedsRevision => HasUnverifiedIdentifiers || HasSyntaxIssues;
+
+        /// <summary>
         /// Create a new validation result.
         /// </summary>
         public KosValidationResult()
@@ -167,6 +182,14 @@ namespace KSPCapcom.Validation
         internal void SetWarning(string warning)
         {
             Warning = warning;
+        }
+
+        /// <summary>
+        /// Set the syntax check result.
+        /// </summary>
+        internal void SetSyntaxResult(KosSyntaxResult syntaxResult)
+        {
+            SyntaxResult = syntaxResult;
         }
 
         /// <summary>

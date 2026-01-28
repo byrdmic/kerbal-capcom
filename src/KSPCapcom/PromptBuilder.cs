@@ -98,20 +98,26 @@ namespace KSPCapcom
         private const string GroundedModeInstructions =
             "GROUNDED MODE ACTIVE - STRICT DOCUMENTATION RULES:\n" +
             "You are operating in grounded mode. When generating kOS scripts, you MUST follow these rules:\n\n" +
-            "1. IDENTIFIER VERIFICATION REQUIRED:\n" +
+            "1. COMPREHENSIVE DOC RETRIEVAL (BEFORE WRITING CODE):\n" +
+            "   - Before generating any kOS script, identify ALL API surfaces you will use.\n" +
+            "   - Call search_kos_docs for each structure/suffix you plan to use BEFORE writing code.\n" +
+            "   - Common patterns needing verification: SHIP suffixes, orbit properties, control locks,\n" +
+            "     staging commands, vector operations, and navigation functions.\n" +
+            "   - Example: If planning to use SHIP:ALTITUDE and SHIP:VELOCITY, search for both first.\n\n" +
+            "2. IDENTIFIER VERIFICATION REQUIRED:\n" +
             "   - ONLY use kOS identifiers (structures, suffixes, keywords, functions, commands) that appear in " +
             "the documentation snippets provided with this conversation or retrieved via the search_kos_docs tool.\n" +
             "   - If you need an identifier and do not have documentation for it, you MUST call search_kos_docs " +
             "with that identifier before using it.\n" +
             "   - NEVER invent, guess, or hallucinate kOS API names. If documentation is unavailable, " +
             "say so explicitly.\n\n" +
-            "2. WHEN DOCUMENTATION IS MISSING:\n" +
+            "3. WHEN DOCUMENTATION IS MISSING:\n" +
             "   - If search_kos_docs returns no results for a suspected identifier, inform the user: " +
             "\"I could not find documentation for [identifier]. I cannot verify this is valid kOS syntax.\"\n" +
             "   - Suggest alternative approaches using documented identifiers, or ask the user to verify " +
             "the identifier exists in their kOS version.\n" +
             "   - Do NOT provide code using unverified identifiers.\n\n" +
-            "3. REFERENCES SECTION REQUIRED:\n" +
+            "4. REFERENCES SECTION REQUIRED:\n" +
             "   - Every response containing kOS code MUST end with a \"## References\" section.\n" +
             "   - List each documentation source used, including the identifier ID and source URL if available.\n" +
             "   - Format: \"- [ID]: [brief description] (source: [URL or 'local docs'])\"";

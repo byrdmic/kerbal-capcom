@@ -50,10 +50,10 @@ namespace KSPCapcom.Tests.Validation
             var result = ValidationFeedbackBuilder.Build(validation);
 
             Assert.That(result, Does.Contain("---"));
-            Assert.That(result, Does.Contain("Grounded Check Failed"));
+            Assert.That(result, Does.Contain("Script Validation Failed"));
             Assert.That(result, Does.Contain("`SHIP:MAGIC`"));
             Assert.That(result, Does.Contain("(line 5)"));
-            Assert.That(result, Does.Contain("verify these identifiers manually"));
+            Assert.That(result, Does.Contain("To fix:"));
         }
 
         [Test]
@@ -167,7 +167,7 @@ namespace KSPCapcom.Tests.Validation
             var result = ValidationFeedbackBuilder.Build(validation);
 
             // Should show warning, not success
-            Assert.That(result, Does.Contain("Grounded Check Failed"));
+            Assert.That(result, Does.Contain("Script Validation Failed"));
             Assert.That(result, Does.Not.Contain("All kOS identifiers verified"));
         }
 
@@ -205,7 +205,7 @@ namespace KSPCapcom.Tests.Validation
 
             var result = ValidationFeedbackBuilder.Build(validation);
 
-            Assert.That(result, Does.Contain("**Grounded Check Failed**"));
+            Assert.That(result, Does.Contain("**Script Validation Failed**"));
         }
 
         [Test]
@@ -250,7 +250,7 @@ namespace KSPCapcom.Tests.Validation
 
             // Assert - should handle without error and include the identifier
             Assert.That(result, Does.Contain(longIdentifier));
-            Assert.That(result, Does.Contain("Grounded Check Failed"));
+            Assert.That(result, Does.Contain("Script Validation Failed"));
         }
 
         [Test]

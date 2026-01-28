@@ -119,6 +119,8 @@
     <Compile Include="Validation\KosIdentifierExtractor.cs" />
     <Compile Include="Validation\KosIdentifierSet.cs" />
     <Compile Include="Validation\KosIdentifierValidator.cs" />
+    <Compile Include="Validation\KosSyntaxChecker.cs" />
+    <Compile Include="Validation\KosSyntaxResult.cs" />
     <Compile Include="Validation\KosValidationResult.cs" />
     <Compile Include="Validation\ReferenceBuilder.cs" />
     <Compile Include="Validation\ValidationFeedbackBuilder.cs" />
