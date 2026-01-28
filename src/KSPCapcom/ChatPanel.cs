@@ -42,6 +42,12 @@ namespace KSPCapcom
         /// </summary>
         private const float MAX_INPUT_HEIGHT = 80f;
 
+        /// <summary>
+        /// Canonical prompt for LKO ascent script generation.
+        /// Fixed string ensures deterministic behavior for tests and transcripts.
+        /// </summary>
+        private const string ASCENT_SCRIPT_PROMPT = "Write a kOS script for LKO ascent for this craft";
+
         private Rect _windowRect;
         private bool _isVisible;
         private string _inputText = "";
@@ -192,6 +198,27 @@ namespace KSPCapcom
         }
 
         /// <summary>
+        /// Whether the ascent script button should be enabled.
+        /// Requires: in editor, not busy.
+        /// </summary>
+        private bool CanWriteAscentScript()
+        {
+            // Can't generate while busy
+            if (IsWaitingForResponse)
+            {
+                return false;
+            }
+
+            // Must be in editor scene
+            if (!HighLogic.LoadedSceneIsEditor)
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        /// <summary>
         /// Get the current craft snapshot from the editor monitor.
         /// </summary>
         private EditorCraftSnapshot GetCurrentSnapshot()
@@ -244,6 +271,53 @@ namespace KSPCapcom
                 snapshot,
                 _currentRequestCts.Token,
                 OnCritiqueComplete,
+                OnStreamChunk
+            );
+        }
+
+        /// <summary>
+        /// Handle click on the Ascent button.
+        /// </summary>
+        private void OnAscentScriptClick()
+        {
+            if (IsWaitingForResponse)
+            {
+                return;
+            }
+
+            // Force refresh to get latest state
+            var monitor = EditorCraftMonitor.Instance;
+            monitor?.ForceRefresh();
+
+            var snapshot = GetCurrentSnapshot();
+
+            // Warn if no craft metrics available, but proceed anyway
+            if (snapshot == null || snapshot.IsEmpty)
+            {
+                AddSystemMessage("<color=#ffaa00>No craft metrics available - script will use default parameters</color>");
+            }
+
+            // Add synthetic user message to show in chat
+            var userMessage = ChatMessage.FromUser($"[Ascent Script Request]");
+            _messages.Add(userMessage);
+            TrimMessageHistory();
+            ScrollToBottom();
+            CapcomCore.Log($"[User] Ascent script requested");
+
+            // Add pending message for visual feedback
+            _pendingMessage = ChatMessage.FromAssistantPending("Generating ascent script...");
+            _messages.Add(_pendingMessage);
+            ScrollToBottom();
+
+            // Create cancellation token
+            _currentRequestCts = new CancellationTokenSource();
+
+            // Use the main responder with the canonical prompt
+            _responder.Respond(
+                ASCENT_SCRIPT_PROMPT,
+                _messages.AsReadOnly(),
+                _currentRequestCts.Token,
+                OnResponderComplete,
                 OnStreamChunk
             );
         }
@@ -859,6 +933,15 @@ namespace KSPCapcom
             _inputText = GUILayout.TextArea(_inputText, _inputStyle,
                 GUILayout.ExpandWidth(true),
                 GUILayout.Height(inputHeight));
+
+            // Ascent button - only enabled in editor when not busy
+            bool canAscent = CanWriteAscentScript();
+            GUI.enabled = canAscent;
+            if (GUILayout.Button("Ascent", _critiqueButtonStyle, GUILayout.Width(50), GUILayout.Height(inputHeight)))
+            {
+                OnAscentScriptClick();
+            }
+            GUI.enabled = true;
 
             // Critique button - only shown/enabled in editor with valid craft
             bool canCritique = CanCritique();
