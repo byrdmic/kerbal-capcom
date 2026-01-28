@@ -72,7 +72,8 @@ namespace KSPCapcom
         private bool _stylesInitialized;
 
         // Input focus management
-        private bool _focusInput;
+        private int _focusInputFrames;
+        private const int FOCUS_FRAME_COUNT = 3;
 
         // Settings UI state
         private readonly CapcomSettings _settings;
@@ -160,6 +161,17 @@ namespace KSPCapcom
         /// Whether a response is currently being generated or pending messages are queued.
         /// </summary>
         private bool IsWaitingForResponse => _pendingMessage != null || _responder.IsBusy;
+
+        /// <summary>
+        /// Check if any settings text field currently has focus.
+        /// </summary>
+        private bool IsSettingsFieldFocused()
+        {
+            string focused = GUI.GetNameOfFocusedControl();
+            return focused == "SettingsModel" ||
+                   focused == "SettingsApiKey" ||
+                   focused == "SettingsEndpoint";
+        }
 
         /// <summary>
         /// Whether the critique button should be enabled.
@@ -380,7 +392,7 @@ namespace KSPCapcom
             CapcomCore.Log($"Chat panel {(_isVisible ? "opened" : "closed")}");
             if (_isVisible)
             {
-                _focusInput = true;
+                _focusInputFrames = FOCUS_FRAME_COUNT;
                 // When showing panel, scroll to bottom to show latest
                 _pendingScrollToBottom = true;
                 _shouldAutoScroll = true;
@@ -396,7 +408,7 @@ namespace KSPCapcom
             {
                 CapcomCore.Log("Chat panel opened");
                 _isVisible = true;
-                _focusInput = true;
+                _focusInputFrames = FOCUS_FRAME_COUNT;
                 _pendingScrollToBottom = true;
                 _shouldAutoScroll = true;
             }
@@ -637,6 +649,7 @@ namespace KSPCapcom
                 GUILayout.BeginHorizontal();
                 GUILayout.Label("Model:", GUILayout.Width(60));
 
+                GUI.SetNextControlName("SettingsModel");
                 string newModel = GUILayout.TextField(_modelInput, GUILayout.ExpandWidth(true));
                 if (newModel != _modelInput)
                 {
@@ -687,6 +700,7 @@ namespace KSPCapcom
                         GUILayout.Space(64); // Indent to align with other fields
 
                         // Password field for API key
+                        GUI.SetNextControlName("SettingsApiKey");
                         _apiKeyInput = GUILayout.PasswordField(_apiKeyInput, '*', GUILayout.ExpandWidth(true));
 
                         if (GUILayout.Button("Save", GUILayout.Width(40)))
@@ -713,6 +727,7 @@ namespace KSPCapcom
                 GUILayout.BeginHorizontal();
                 GUILayout.Label("Endpoint:", GUILayout.Width(60));
 
+                GUI.SetNextControlName("SettingsEndpoint");
                 string newEndpoint = GUILayout.TextField(_endpointInput, GUILayout.ExpandWidth(true));
                 if (newEndpoint != _endpointInput)
                 {
@@ -911,15 +926,9 @@ namespace KSPCapcom
             // Input remains enabled even while waiting (messages will queue)
             // This keeps UI responsive
 
-            // Set focus to input field if needed
-            if (_focusInput)
-            {
-                GUI.FocusControl("ChatInput");
-                _focusInput = false;
-            }
-
             // Calculate dynamic height for input area based on content
             // Use TextArea for multiline input with Shift+Enter support
+            // Name the control BEFORE drawing
             GUI.SetNextControlName("ChatInput");
 
             // Calculate appropriate height based on line count (capped)
@@ -933,6 +942,16 @@ namespace KSPCapcom
             _inputText = GUILayout.TextArea(_inputText, _inputStyle,
                 GUILayout.ExpandWidth(true),
                 GUILayout.Height(inputHeight));
+
+            // Focus AFTER drawing, with guard against stealing from settings fields
+            if (_focusInputFrames > 0)
+            {
+                if (!IsSettingsFieldFocused())
+                {
+                    GUI.FocusControl("ChatInput");
+                }
+                _focusInputFrames--;
+            }
 
             // Ascent button - only enabled in editor when not busy
             bool canAscent = CanWriteAscentScript();
@@ -1011,7 +1030,7 @@ namespace KSPCapcom
             _inputText = "";
 
             // Re-focus input after sending
-            _focusInput = true;
+            _focusInputFrames = FOCUS_FRAME_COUNT;
 
             // If responder is busy, queue the request
             if (willBeQueued)
