@@ -130,12 +130,24 @@ namespace KSPCapcom
         /// </summary>
         private const string LKOAscentGuidance =
             "ASCENT SCRIPT GUIDANCE:\n" +
-            "When the player requests an LKO ascent or launch script:\n" +
-            "- Reference the craft's TWR and delta-V from the snapshot when tuning parameters\n" +
-            "- For TWR >= 1.5: aggressive gravity turn starting ~100m; TWR 1.0-1.5: gentler turn starting ~250m\n" +
-            "- Target apoapsis based on available delta-V (typical LKO: 70-80km for Kerbin)\n" +
-            "- State the snapshot values you're using or note if metrics unavailable\n" +
-            "- In Do mode: one kOS code block with parameter summary, minimal prose";
+            "When generating an LKO ascent script:\n\n" +
+            "GRAVITY TURN:\n" +
+            "- TWR >= 1.5: aggressive turn starting ~100m\n" +
+            "- TWR 1.0-1.5: gentler turn starting ~250m\n" +
+            "- Target 70-80km apoapsis for Kerbin LKO\n\n" +
+            "STAGING LOGIC (check staging.isSingleStage in craft metrics):\n" +
+            "- If isSingleStage is true: Do NOT include any STAGE commands\n" +
+            "- For multi-stage crafts:\n" +
+            "  - Always guard with STAGE:READY before calling STAGE\n" +
+            "  - Use WHEN trigger or check: IF NOT STAGE:READY { WAIT UNTIL STAGE:READY. }\n" +
+            "  - Detect staging need via: MAXTHRUST = 0 or fuel depletion\n" +
+            "  - Add 0.5s minimum delay between stages to prevent rapid staging\n" +
+            "  - Reference staging.stages array to know expected stage count\n" +
+            "- Pattern hints (staging.pattern):\n" +
+            "  - 'stack': Stage when current stage exhausts fuel/thrust\n" +
+            "  - 'asparagus': May need altitude-based or symmetrical staging\n" +
+            "  - 'unknown': Use conservative thrust-loss detection\n\n" +
+            "Include inline comments for user-adjustable values (turn altitude, target apoapsis).";
 
         /// <summary>
         /// Warning when grounded mode is enabled but documentation is not loaded.

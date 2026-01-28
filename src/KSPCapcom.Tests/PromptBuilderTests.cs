@@ -549,6 +549,24 @@ namespace KSPCapcom.Tests
             Assert.That(prompt, Does.Not.Contain("ASCENT SCRIPT GUIDANCE"));
         }
 
+        [Test]
+        public void LKOAscentGuidance_ContainsStagingInstructions()
+        {
+            // Access the private constant via reflection
+            var field = typeof(PromptBuilder).GetField("LKOAscentGuidance",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+            var guidance = field?.GetValue(null) as string;
+
+            // Assert - verify staging-related content exists
+            Assert.That(guidance, Is.Not.Null, "LKOAscentGuidance field should exist");
+            Assert.That(guidance, Does.Contain("isSingleStage"),
+                "Should reference isSingleStage for single-stage detection");
+            Assert.That(guidance, Does.Contain("STAGE:READY"),
+                "Should mention STAGE:READY guard");
+            Assert.That(guidance, Does.Contain("staging.pattern"),
+                "Should reference staging.pattern for pattern hints");
+        }
+
         #endregion
     }
 }

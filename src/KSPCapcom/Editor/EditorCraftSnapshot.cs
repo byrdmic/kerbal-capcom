@@ -404,11 +404,66 @@ namespace KSPCapcom.Editor
             }
             sb.Append("]");
 
+            // Detailed staging section for script generation
+            sb.Append(",\"staging\":{");
+            sb.Append($"\"stageCount\":{Staging.StageCount}");
+            sb.Append($",\"pattern\":\"{GetStagingPattern().ToString().ToLowerInvariant()}\"");
+            sb.Append($",\"isSingleStage\":{(Staging.StageCount <= 1 ? "true" : "false")}");
+            sb.Append(",\"stages\":[");
+            for (int i = 0; i < Staging.Stages.Count; i++)
+            {
+                if (i > 0) sb.Append(",");
+                sb.Append(Staging.Stages[i].ToJson());
+            }
+            sb.Append("]}");
+
             sb.Append("}");
             sb.AppendLine();
             sb.Append("```");
 
             return sb.ToString();
+        }
+
+        /// <summary>
+        /// Detect the staging pattern of this craft for script generation guidance.
+        /// </summary>
+        /// <returns>The detected staging pattern.</returns>
+        public StagingPattern GetStagingPattern()
+        {
+            if (Staging.StageCount <= 1)
+                return StagingPattern.SingleStage;
+
+            bool hasRadial = HasRadialDecouplers();
+            int stagesWithEngineAndDecoupler = CountStagesWithEngineAndDecoupler();
+
+            if (hasRadial && stagesWithEngineAndDecoupler >= 2)
+                return StagingPattern.Asparagus;
+
+            if (stagesWithEngineAndDecoupler >= 1 || Decouplers.Count > 0)
+                return StagingPattern.Stack;
+
+            return StagingPattern.Unknown;
+        }
+
+        /// <summary>
+        /// Check if the craft has any radial decouplers.
+        /// </summary>
+        private bool HasRadialDecouplers()
+        {
+            foreach (var d in Decouplers)
+                if (d.IsRadial) return true;
+            return false;
+        }
+
+        /// <summary>
+        /// Count stages that have both an engine and a decoupler.
+        /// </summary>
+        private int CountStagesWithEngineAndDecoupler()
+        {
+            int count = 0;
+            foreach (var stage in Staging.Stages)
+                if (stage.HasEngine && stage.HasDecoupler) count++;
+            return count;
         }
 
         /// <summary>
@@ -524,6 +579,21 @@ namespace KSPCapcom.Editor
         Liquid,
         Solid,
         Nuclear
+    }
+
+    /// <summary>
+    /// Staging pattern classification for ascent script generation.
+    /// </summary>
+    public enum StagingPattern
+    {
+        /// <summary>No staging needed (single-stage craft like SSTO or probe).</summary>
+        SingleStage,
+        /// <summary>Traditional sequential staging (stacked stages).</summary>
+        Stack,
+        /// <summary>Parallel staging with radial boosters (asparagus or onion).</summary>
+        Asparagus,
+        /// <summary>Conservative fallback when pattern is unclear.</summary>
+        Unknown
     }
 
     /// <summary>
