@@ -127,5 +127,51 @@ namespace KSPCapcom
         /// In-memory only - no persistence in M1.
         /// </summary>
         public bool ReadinessPanelVisible { get; set; } = false;
+
+        /// <summary>
+        /// Path to the kOS archive folder for saving scripts.
+        /// </summary>
+        public string KosArchivePath { get; private set; } = "";
+
+        /// <summary>
+        /// Whether the current archive path is valid (exists and is writable).
+        /// </summary>
+        public bool IsArchivePathValid { get; private set; } = false;
+
+        /// <summary>
+        /// Validation error message if archive path is invalid.
+        /// </summary>
+        public string ArchivePathValidationError { get; private set; } = "";
+
+        /// <summary>
+        /// Set the kOS archive path with validation.
+        /// Empty string clears the path. Otherwise validates path exists.
+        /// </summary>
+        /// <param name="value">The archive folder path to set.</param>
+        public void SetKosArchivePath(string value)
+        {
+            value = value ?? "";
+            KosArchivePath = value;
+
+            // Empty is valid (not configured)
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                IsArchivePathValid = false;
+                ArchivePathValidationError = "";
+                return;
+            }
+
+            // Check if directory exists
+            if (!System.IO.Directory.Exists(value))
+            {
+                IsArchivePathValid = false;
+                ArchivePathValidationError = "Archive folder not found";
+                return;
+            }
+
+            // Valid
+            IsArchivePathValid = true;
+            ArchivePathValidationError = "";
+        }
     }
 }

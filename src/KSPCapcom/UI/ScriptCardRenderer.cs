@@ -54,7 +54,8 @@ namespace KSPCapcom.UI
         /// <param name="codeBlock">The code block segment to render.</param>
         /// <param name="maxWidth">Maximum width for the card.</param>
         /// <param name="onCopyResult">Optional callback invoked after copy: (success, errorMessage).</param>
-        public void DrawScriptCard(CodeBlockSegment codeBlock, float maxWidth, Action<bool, string> onCopyResult = null)
+        /// <param name="onSaveRequest">Optional callback invoked when Save is clicked: (codeBlock).</param>
+        public void DrawScriptCard(CodeBlockSegment codeBlock, float maxWidth, Action<bool, string> onCopyResult = null, Action<CodeBlockSegment> onSaveRequest = null)
         {
             if (codeBlock == null)
             {
@@ -73,8 +74,8 @@ namespace KSPCapcom.UI
             // Card container
             GUILayout.BeginVertical(_cardBoxStyle, GUILayout.MaxWidth(maxWidth));
 
-            // Header row: [kOS Script] [Copy] [Expand]
-            DrawHeader(codeBlock, cardId, needsCollapse, isExpanded, onCopyResult);
+            // Header row: [kOS Script] [Save] [Copy] [Expand]
+            DrawHeader(codeBlock, cardId, needsCollapse, isExpanded, onCopyResult, onSaveRequest);
 
             // Code content
             DrawCodeContent(codeBlock.RawCode, lines, needsCollapse, isExpanded);
@@ -88,7 +89,7 @@ namespace KSPCapcom.UI
         /// <summary>
         /// Draw the card header with title and action buttons.
         /// </summary>
-        private void DrawHeader(CodeBlockSegment codeBlock, int cardId, bool needsCollapse, bool isExpanded, Action<bool, string> onCopyResult)
+        private void DrawHeader(CodeBlockSegment codeBlock, int cardId, bool needsCollapse, bool isExpanded, Action<bool, string> onCopyResult, Action<CodeBlockSegment> onSaveRequest)
         {
             GUILayout.BeginHorizontal();
 
@@ -105,6 +106,15 @@ namespace KSPCapcom.UI
 
             GUILayout.Label(title, _headerStyle);
             GUILayout.FlexibleSpace();
+
+            // Save button (only for kOS scripts)
+            if (codeBlock.IsKosLikely && onSaveRequest != null)
+            {
+                if (GUILayout.Button("Save", _buttonStyle, GUILayout.Width(BUTTON_WIDTH), GUILayout.Height(BUTTON_HEIGHT)))
+                {
+                    onSaveRequest.Invoke(codeBlock);
+                }
+            }
 
             // Copy button
             if (GUILayout.Button("Copy", _buttonStyle, GUILayout.Width(BUTTON_WIDTH), GUILayout.Height(BUTTON_HEIGHT)))
