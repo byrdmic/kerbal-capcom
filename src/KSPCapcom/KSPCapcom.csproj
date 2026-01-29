@@ -72,6 +72,14 @@
     <Compile Include="CapcomCore.cs" />
     <Compile Include="CapcomSettings.cs" />
     <Compile Include="ChatPanel.cs" />
+    <Compile Include="Chat\ChatMessage.cs" />
+    <Compile Include="Chat\ChatPanel.Input.cs" />
+    <Compile Include="Chat\ChatPanel.Messages.cs" />
+    <Compile Include="Chat\ChatPanel.SaveDialog.cs" />
+    <Compile Include="Chat\ChatPanel.Settings.cs" />
+    <Compile Include="Chat\ChatPanel.Styles.cs" />
+    <Compile Include="Chat\ErrorMessageData.cs" />
+    <Compile Include="Chat\MessageQueue.cs" />
     <Compile Include="Critique\CritiquePromptBuilder.cs" />
     <Compile Include="Critique\CritiqueService.cs" />
     <Compile Include="ReadinessPanel.cs" />
