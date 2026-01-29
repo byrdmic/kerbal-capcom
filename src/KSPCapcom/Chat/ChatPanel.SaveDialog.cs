@@ -158,19 +158,42 @@ namespace KSPCapcom
             }
 
             // Perform save
-            var result = _scriptSaver.Save(_settings.KosArchivePath, _saveDialogFilename, _saveDialogCodeBlock.RawCode);
+            var result = _scriptSaver.Save(
+                _settings.KosArchivePath,
+                _saveDialogFilename,
+                _saveDialogCodeBlock.RawCode,
+                _saveDialogShowOverwrite);
 
             if (result.Success)
             {
-                // Extract just the filename for the run command
-                string justFilename = System.IO.Path.GetFileNameWithoutExtension(_saveDialogFilename);
-                AddSystemMessage(FormatSuccess($"Saved to {result.FullPath}\nRun: run {justFilename}."));
+                string message = FormatSaveSuccessMessage(result, _saveDialogFilename);
+                AddSystemMessage(FormatSuccess(message));
                 CloseSaveDialog();
             }
             else
             {
                 _saveDialogValidationError = result.Error;
             }
+        }
+
+        /// <summary>
+        /// Format the success message after saving a script.
+        /// </summary>
+        private string FormatSaveSuccessMessage(SaveResult result, string filename)
+        {
+            // Ensure .ks extension for display
+            if (!filename.EndsWith(".ks", System.StringComparison.OrdinalIgnoreCase))
+                filename += ".ks";
+
+            // Get and truncate folder path
+            string folder = System.IO.Path.GetDirectoryName(result.FullPath);
+            if (folder.Length > 35)
+                folder = "..." + folder.Substring(folder.Length - 32);
+
+            string action = result.WasOverwritten ? "Overwritten" : "Saved";
+            string kosCommand = $"runpath(\"0:/{filename}\").";
+
+            return $"{action}: {filename}\nFolder: {folder}\nRun in kOS: {kosCommand}";
         }
 
         /// <summary>

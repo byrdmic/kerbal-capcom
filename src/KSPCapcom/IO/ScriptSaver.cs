@@ -24,14 +24,21 @@ namespace KSPCapcom.IO
         /// </summary>
         public string Error { get; }
 
-        private SaveResult(bool success, string fullPath, string error)
+        /// <summary>
+        /// Whether an existing file was overwritten.
+        /// </summary>
+        public bool WasOverwritten { get; }
+
+        private SaveResult(bool success, string fullPath, string error, bool wasOverwritten = false)
         {
             Success = success;
             FullPath = fullPath;
             Error = error;
+            WasOverwritten = wasOverwritten;
         }
 
-        public static SaveResult Ok(string fullPath) => new SaveResult(true, fullPath, null);
+        public static SaveResult Ok(string fullPath, bool wasOverwritten = false)
+            => new SaveResult(true, fullPath, null, wasOverwritten);
         public static SaveResult Fail(string error) => new SaveResult(false, null, error);
     }
 
@@ -93,8 +100,9 @@ namespace KSPCapcom.IO
         /// <param name="archivePath">Path to the kOS archive folder.</param>
         /// <param name="filename">The filename to save as (with or without .ks extension).</param>
         /// <param name="content">The script content.</param>
+        /// <param name="isOverwrite">Whether this save is overwriting an existing file.</param>
         /// <returns>Result indicating success or failure.</returns>
-        public SaveResult Save(string archivePath, string filename, string content)
+        public SaveResult Save(string archivePath, string filename, string content, bool isOverwrite = false)
         {
             // Validate archive path
             if (string.IsNullOrWhiteSpace(archivePath))
@@ -122,7 +130,7 @@ namespace KSPCapcom.IO
             {
                 File.WriteAllText(fullPath, content);
                 CapcomCore.Log($"ScriptSaver: Saved script to {fullPath}");
-                return SaveResult.Ok(fullPath);
+                return SaveResult.Ok(fullPath, isOverwrite);
             }
             catch (UnauthorizedAccessException)
             {
