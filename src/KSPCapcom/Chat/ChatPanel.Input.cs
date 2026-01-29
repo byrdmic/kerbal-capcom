@@ -156,14 +156,24 @@ namespace KSPCapcom
                 _focusInputFrames--;
             }
 
-            // Ascent button - only enabled in editor when not busy
-            bool canAscent = CanWriteAscentScript();
+            // Ascent button with disabled reason
+            var ascentValidation = ValidateAscentPrerequisites();
+            bool canAscent = ascentValidation.IsValid;
+
+            GUILayout.BeginVertical(GUILayout.Width(55));
             GUI.enabled = canAscent;
             if (GUILayout.Button("Ascent", _critiqueButtonStyle, GUILayout.Width(50), GUILayout.Height(inputHeight)))
             {
                 OnAscentScriptClick();
             }
             GUI.enabled = true;
+
+            // Show reason as small hint below disabled button
+            if (!canAscent && !string.IsNullOrEmpty(ascentValidation.Reason))
+            {
+                GUILayout.Label(ascentValidation.Reason, _disabledHintStyle, GUILayout.Width(55));
+            }
+            GUILayout.EndVertical();
 
             // Critique button - only shown/enabled in editor with valid craft
             bool canCritique = CanCritique();

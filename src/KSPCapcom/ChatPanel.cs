@@ -176,14 +176,50 @@ namespace KSPCapcom
         }
 
         /// <summary>
+        /// Validate all prerequisites for ascent script generation.
+        /// </summary>
+        private AscentValidation ValidateAscentPrerequisites()
+        {
+            // 1. Must be in editor scene (VAB/SPH only)
+            if (!HighLogic.LoadedSceneIsEditor)
+            {
+                return AscentValidation.Invalid("VAB/SPH only");
+            }
+
+            // 2. Must not be busy with another request
+            if (IsWaitingForResponse)
+            {
+                return AscentValidation.Invalid("Request in progress");
+            }
+
+            // 3. Must have API key configured
+            if (_secrets == null || !_secrets.HasApiKey)
+            {
+                return AscentValidation.Invalid("API key needed");
+            }
+
+            // 4. Must have a craft loaded with parts
+            var monitor = EditorCraftMonitor.Instance;
+            if (monitor == null)
+            {
+                return AscentValidation.Invalid("No craft loaded");
+            }
+
+            var snapshot = monitor.CurrentSnapshot;
+            if (snapshot == null || snapshot.IsEmpty)
+            {
+                return AscentValidation.Invalid("No craft loaded");
+            }
+
+            return AscentValidation.Valid();
+        }
+
+        /// <summary>
         /// Whether the ascent script button should be enabled.
-        /// Requires: in editor, not busy.
         /// </summary>
         private bool CanWriteAscentScript()
         {
-            if (IsWaitingForResponse) return false;
-            if (!HighLogic.LoadedSceneIsEditor) return false;
-            return true;
+            return ValidateAscentPrerequisites().IsValid;
         }
 
         /// <summary>
@@ -337,16 +373,18 @@ namespace KSPCapcom
 
         private void OnAscentScriptClick()
         {
-            if (IsWaitingForResponse) return;
+            // Defensive check - validate prerequisites (may have changed since button enabled)
+            var validation = ValidateAscentPrerequisites();
+            if (!validation.IsValid)
+            {
+                AddSystemMessage(FormatWarning($"Cannot generate script: {validation.Reason}"));
+                return;
+            }
 
             var monitor = EditorCraftMonitor.Instance;
             monitor?.ForceRefresh();
 
             var snapshot = GetCurrentSnapshot();
-            if (snapshot == null || snapshot.IsEmpty)
-            {
-                AddSystemMessage(FormatWarning("No craft metrics available - script will use default parameters"));
-            }
 
             // Capture context for potential retry
             _lastRequestContext = new LastRequestContext
@@ -545,6 +583,13 @@ namespace KSPCapcom
                     }
 
                     ParseAndValidateMessage(_pendingMessage);
+
+                    // Validate ascent responses include script
+                    if (_lastRequestContext.HasValue && _lastRequestContext.Value.WasAscentRequest)
+                    {
+                        ValidateAscentResponse(_pendingMessage);
+                    }
+
                     CapcomCore.Log($"[Assistant] {result.Text}");
 
                     // Clear retry state on success
@@ -646,6 +691,30 @@ namespace KSPCapcom
             {
                 CapcomCore.LogWarning($"ChatPanel: Failed to parse message - {ex.Message}");
             }
+        }
+
+        /// <summary>
+        /// Validate ascent script response contains a usable kOS code block.
+        /// Shows warning if no script card will render.
+        /// </summary>
+        private void ValidateAscentResponse(ChatMessage message)
+        {
+            if (message?.ParsedContent == null || !message.ParsedContent.HasCodeBlocks)
+            {
+                AddSystemMessage(FormatWarning("Response did not include a kOS script. Try again or rephrase."));
+                return;
+            }
+
+            // Check for kOS-like code block
+            foreach (var segment in message.ParsedContent.Segments)
+            {
+                if (segment is CodeBlockSegment codeBlock && codeBlock.IsKosLikely)
+                {
+                    return; // Found valid script
+                }
+            }
+
+            AddSystemMessage(FormatWarning("Response contained code but no kOS script was detected."));
         }
 
         private void ProcessNextQueuedMessage()
@@ -829,6 +898,24 @@ namespace KSPCapcom
             public bool WasCritiqueRequest;
             public bool WasAscentRequest;
             public DateTime Timestamp;
+        }
+
+        /// <summary>
+        /// Validation result for ascent script prerequisites.
+        /// </summary>
+        private struct AscentValidation
+        {
+            public bool IsValid { get; }
+            public string Reason { get; }
+
+            private AscentValidation(bool isValid, string reason)
+            {
+                IsValid = isValid;
+                Reason = reason;
+            }
+
+            public static AscentValidation Valid() => new AscentValidation(true, null);
+            public static AscentValidation Invalid(string reason) => new AscentValidation(false, reason);
         }
 
         /// <summary>

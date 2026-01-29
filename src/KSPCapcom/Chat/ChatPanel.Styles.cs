@@ -60,6 +60,7 @@ namespace KSPCapcom
         private GUIStyle _queuedMessageStyle;
         private GUIStyle _critiqueButtonStyle;
         private GUIStyle _jumpToLatestStyle;
+        private GUIStyle _disabledHintStyle;
 
         private void InitializeStyles()
         {
@@ -156,6 +157,15 @@ namespace KSPCapcom
                 alignment = TextAnchor.MiddleCenter
             };
             _jumpToLatestStyle.normal.textColor = new Color(0.8f, 0.9f, 1.0f); // Light blue for jump button
+
+            // Disabled hint style for button tooltips
+            _disabledHintStyle = new GUIStyle(HighLogic.Skin.label)
+            {
+                fontSize = 8,
+                alignment = TextAnchor.UpperCenter,
+                wordWrap = true
+            };
+            _disabledHintStyle.normal.textColor = COLOR_MUTED;
 
             _stylesInitialized = true;
         }
