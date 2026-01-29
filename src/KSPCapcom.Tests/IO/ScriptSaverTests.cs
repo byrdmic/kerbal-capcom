@@ -347,7 +347,7 @@ namespace KSPCapcom.Tests.IO
             var result = _saver.Save("", "script.ks", "PRINT \"Hello\".");
 
             Assert.IsFalse(result.Success);
-            Assert.AreEqual("Configure kOS archive path in Settings", result.Error);
+            Assert.AreEqual("Archive path not set - configure in Settings", result.Error);
         }
 
         [Test]

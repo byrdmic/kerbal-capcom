@@ -130,9 +130,10 @@ namespace KSPCapcom.Parsing
         /// <summary>
         /// Pattern to match fenced code blocks with optional language tag.
         /// Groups: lang (optional), code (content between fences).
+        /// Matches any language tag but captures kos/kerboscript specifically.
         /// </summary>
         private static readonly Regex FencedBlockPattern = new Regex(
-            @"```(?<lang>kos|kerboscript)?[ \t]*\r?\n(?<code>[\s\S]*?)```",
+            @"```(?<lang>[a-zA-Z0-9_-]*)?[ \t]*\r?\n(?<code>[\s\S]*?)```",
             RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
         /// <summary>
@@ -192,7 +193,9 @@ namespace KSPCapcom.Parsing
                     var langGroup = match.Groups["lang"];
                     var codeGroup = match.Groups["code"];
 
-                    string language = langGroup.Success ? langGroup.Value.ToLowerInvariant() : null;
+                    string language = langGroup.Success && !string.IsNullOrEmpty(langGroup.Value)
+                        ? langGroup.Value.ToLowerInvariant()
+                        : null;
                     string rawCode = codeGroup.Success ? codeGroup.Value : string.Empty;
 
                     // Trim trailing whitespace from code but preserve leading indentation

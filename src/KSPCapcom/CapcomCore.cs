@@ -151,21 +151,19 @@ namespace KSPCapcom
 
         /// <summary>
         /// Initialize the kOS documentation service.
-        /// Loading is async to avoid frame hitches.
+        /// Loading is synchronous to ensure docs are ready before first user request.
         /// </summary>
         private void InitializeKosDocs()
         {
-            KosDocService.Instance.Initialize(success =>
+            var success = KosDocService.Instance.InitializeSync();
+            if (success)
             {
-                if (success)
-                {
-                    Log($"kOS docs loaded: {KosDocService.Instance.EntryCount} entries");
-                }
-                else
-                {
-                    LogWarning("kOS docs failed to load - kOS syntax help will be limited");
-                }
-            });
+                Log($"kOS docs loaded: {KosDocService.Instance.EntryCount} entries");
+            }
+            else
+            {
+                LogWarning("kOS docs failed to load - kOS syntax help will be limited");
+            }
         }
 
         /// <summary>

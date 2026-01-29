@@ -84,6 +84,22 @@ namespace KSPCapcom.KosDocs
         }
 
         /// <summary>
+        /// Initialize the service synchronously.
+        /// Blocks until loading completes (or fails).
+        /// </summary>
+        /// <returns>True if documentation loaded successfully.</returns>
+        public bool InitializeSync()
+        {
+            if (_loadInitiated)
+            {
+                return _loader.IsReady;
+            }
+
+            _loadInitiated = true;
+            return _loader.LoadSync();
+        }
+
+        /// <summary>
         /// Get a documentation entry by exact ID.
         /// </summary>
         public DocEntry GetById(string id)

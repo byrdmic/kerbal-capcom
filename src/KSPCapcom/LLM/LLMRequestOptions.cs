@@ -17,12 +17,12 @@ namespace KSPCapcom.LLM
         /// <summary>
         /// Default maximum tokens in the response.
         /// </summary>
-        public const int DefaultMaxTokens = 1024;
+        public const int DefaultMaxTokens = 40960;
 
         /// <summary>
         /// Default timeout in milliseconds.
         /// </summary>
-        public const int DefaultTimeoutMs = 30000;
+        public const int DefaultTimeoutMs = 180000;
 
         /// <summary>
         /// Sampling temperature (0.0 = deterministic, 1.0+ = creative).

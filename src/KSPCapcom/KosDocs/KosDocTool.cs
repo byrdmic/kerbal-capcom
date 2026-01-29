@@ -85,12 +85,17 @@ namespace KSPCapcom.KosDocs
                     limit = MaxResultsLimit;
                 }
 
-                // Check service readiness
+                // Check service readiness - attempt sync load as fallback
                 if (!_service.IsReady)
                 {
-                    stopwatch.Stop();
-                    CapcomCore.Log($"TELEM|SEARCH|query={TruncateQuery(query)}|topN={limit}|ms={stopwatch.ElapsedMilliseconds}|results=0|error=docs_not_loaded");
-                    return KosDocSearchResult.Fail("Documentation not loaded");
+                    // Try synchronous initialization as fallback
+                    if (!KosDocService.Instance.InitializeSync())
+                    {
+                        stopwatch.Stop();
+                        CapcomCore.Log($"TELEM|SEARCH|query={TruncateQuery(query)}|topN={limit}|ms={stopwatch.ElapsedMilliseconds}|results=0|error=docs_not_loaded");
+                        return KosDocSearchResult.Fail("Documentation not loaded");
+                    }
+                    CapcomCore.Log("KosDocTool: Docs loaded via fallback sync initialization");
                 }
 
                 // Perform search

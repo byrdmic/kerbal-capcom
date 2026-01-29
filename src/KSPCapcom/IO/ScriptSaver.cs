@@ -210,8 +210,14 @@ namespace KSPCapcom.IO
                 return ValidationResult.Invalid("Filename cannot have leading/trailing whitespace");
             }
 
-            // Path separators
-            if (filename.Contains("/") || filename.Contains("\\") || filename.Contains(".."))
+            // Path separators - check for actual path traversal patterns
+            if (filename.Contains("/") || filename.Contains("\\"))
+            {
+                return ValidationResult.Invalid("Filename cannot contain path separators");
+            }
+
+            // Parent directory traversal - only at start or with separators
+            if (filename.StartsWith("..") || filename.Contains("../") || filename.Contains("..\\"))
             {
                 return ValidationResult.Invalid("Filename cannot contain path separators");
             }
@@ -234,10 +240,17 @@ namespace KSPCapcom.IO
                 }
             }
 
+            // Check for trailing dot on raw filename first (handles "script." case)
+            // Windows silently strips trailing dots and spaces
+            if (filename.EndsWith(".") || filename.EndsWith(" "))
+            {
+                return ValidationResult.Invalid("Filename cannot end with a dot or space");
+            }
+
             // Get name without extension for remaining checks
             string nameWithoutExt = Path.GetFileNameWithoutExtension(filename);
 
-            // Windows silently strips trailing dots and spaces
+            // Also check base name for trailing dots/spaces (handles "script..ks" case)
             if (nameWithoutExt.EndsWith(".") || nameWithoutExt.EndsWith(" "))
             {
                 return ValidationResult.Invalid("Filename cannot end with a dot or space");
