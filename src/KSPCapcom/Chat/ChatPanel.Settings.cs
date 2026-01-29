@@ -205,17 +205,18 @@ namespace KSPCapcom
                     if (!_settings.IsArchivePathValid)
                     {
                         GUILayout.Label(_settings.ArchivePathValidationError, _validationErrorStyle);
+                        GUILayout.Label("kOS archive is <KSP>/Ships/Script/", _statusLabelStyle);
                     }
                     else
                     {
                         var validStyle = new GUIStyle(_statusLabelStyle);
                         validStyle.normal.textColor = COLOR_SUCCESS;
-                        GUILayout.Label("Archive folder found", validStyle);
+                        GUILayout.Label("Archive folder OK", validStyle);
                     }
                 }
                 else
                 {
-                    GUILayout.Label("Path to Ships/Script/ folder", _statusLabelStyle);
+                    GUILayout.Label("e.g., C:\\KSP\\Ships\\Script", _statusLabelStyle);
                 }
 
                 GUILayout.EndVertical();

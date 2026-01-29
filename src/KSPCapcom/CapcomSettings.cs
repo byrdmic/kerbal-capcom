@@ -165,7 +165,27 @@ namespace KSPCapcom
             if (!System.IO.Directory.Exists(value))
             {
                 IsArchivePathValid = false;
-                ArchivePathValidationError = "Archive folder not found";
+                ArchivePathValidationError = "Folder not found";
+                return;
+            }
+
+            // Check write permission
+            try
+            {
+                string testFile = System.IO.Path.Combine(value, ".capcom_write_test");
+                System.IO.File.WriteAllText(testFile, "");
+                System.IO.File.Delete(testFile);
+            }
+            catch (UnauthorizedAccessException)
+            {
+                IsArchivePathValid = false;
+                ArchivePathValidationError = "Access denied (check folder permissions)";
+                return;
+            }
+            catch (System.IO.IOException)
+            {
+                IsArchivePathValid = false;
+                ArchivePathValidationError = "Cannot write to folder";
                 return;
             }
 

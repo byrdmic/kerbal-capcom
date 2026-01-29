@@ -112,12 +112,12 @@ namespace KSPCapcom.IO
             // Validate archive path
             if (string.IsNullOrWhiteSpace(archivePath))
             {
-                return SaveResult.Fail("Configure kOS archive path in Settings");
+                return SaveResult.Fail("Archive path not set - configure in Settings");
             }
 
             if (!Directory.Exists(archivePath))
             {
-                return SaveResult.Fail($"Archive folder not found: {archivePath}");
+                return SaveResult.Fail("Archive folder not found - check Settings");
             }
 
             // Validate and normalize filename
@@ -146,7 +146,7 @@ namespace KSPCapcom.IO
             }
             catch (UnauthorizedAccessException)
             {
-                return SaveResult.Fail("Cannot write to archive: access denied");
+                return SaveResult.Fail("Access denied - check folder permissions");
             }
             catch (IOException ex)
             {

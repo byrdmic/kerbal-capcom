@@ -117,7 +117,18 @@ namespace KSPCapcom
             // Check if archive path is configured
             if (_settings == null || !_settings.IsArchivePathValid)
             {
-                AddSystemMessage(FormatWarning("Configure kOS archive path in Settings"));
+                string errorMsg;
+                if (_settings == null || string.IsNullOrWhiteSpace(_settings.KosArchivePath))
+                {
+                    errorMsg = "kOS archive path not configured.\n" +
+                               "Set path in Settings (e.g., C:\\KSP\\Ships\\Script)";
+                }
+                else
+                {
+                    errorMsg = $"kOS archive: {_settings.ArchivePathValidationError}\n" +
+                               "Check path in Settings";
+                }
+                AddSystemMessage(FormatWarning(errorMsg));
                 return;
             }
 

@@ -134,6 +134,7 @@
     <Compile Include="Validation\ValidationFeedbackBuilder.cs" />
     <Compile Include="Parsing\CodeBlockParser.cs" />
     <Compile Include="UI\ScriptCardRenderer.cs" />
+    <Compile Include="UI\ScriptEditorPanel.cs" />
     <Compile Include="IO\ScriptSaver.cs" />
     <Compile Include="SecretStore.cs" />
     <Compile Include="ToolbarButton.cs" />
