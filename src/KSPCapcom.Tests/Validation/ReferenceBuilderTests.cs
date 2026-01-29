@@ -36,7 +36,7 @@ namespace KSPCapcom.Tests.Validation
         }
 
         [Test]
-        public void Build_WithMultipleVerifiedIdentifiers_DeduplicatesByDocId()
+        public void Build_WithMultipleVerifiedIdentifiers_GroupsIdentifiers()
         {
             // Arrange
             var validation = new KosValidationResult();
@@ -58,9 +58,88 @@ namespace KSPCapcom.Tests.Validation
             // Act
             var result = ReferenceBuilder.Build(validation, docTracker);
 
-            // Assert - should only have one reference, not two
-            var altitudeCount = System.Text.RegularExpressions.Regex.Matches(result, "ALTITUDE").Count;
-            Assert.That(altitudeCount, Is.EqualTo(1), "Should deduplicate references by doc ID");
+            // Assert - both identifiers should appear on the same line
+            Assert.That(result, Does.Contain("`SHIP:ALTITUDE`"));
+            Assert.That(result, Does.Contain("`VESSEL:ALTITUDE`"));
+            // Should only have one reference line (grouping identical docs)
+            Assert.That(ReferenceBuilder.CountReferences(result), Is.EqualTo(1),
+                "Should group identifiers with same source into one reference");
+        }
+
+        [Test]
+        public void Build_DifferentDocsWithSameDescription_NotGrouped()
+        {
+            // Arrange
+            var validation = new KosValidationResult();
+            var docEntry1 = CreateDocEntry("VESSEL:ALT", "ALT", "Gets altitude",
+                "https://ksp-kos.github.io/KOS/vessel.html");
+            var docEntry2 = CreateDocEntry("BODY:ALT", "ALT", "Gets altitude",
+                "https://ksp-kos.github.io/KOS/body.html"); // Different URL
+
+            var verified1 = new VerifiedIdentifier("VESSEL:ALT", "VESSEL:ALT", docEntry1.SourceRef);
+            verified1.SourceDoc = docEntry1;
+            AddVerified(validation, verified1);
+
+            var verified2 = new VerifiedIdentifier("BODY:ALT", "BODY:ALT", docEntry2.SourceRef);
+            verified2.SourceDoc = docEntry2;
+            AddVerified(validation, verified2);
+
+            var docTracker = new DocEntryTracker();
+            docTracker.Add(docEntry1);
+            docTracker.Add(docEntry2);
+
+            // Act
+            var result = ReferenceBuilder.Build(validation, docTracker);
+
+            // Assert - should have two separate references (different URLs)
+            Assert.That(ReferenceBuilder.CountReferences(result), Is.EqualTo(2),
+                "Different source URLs should result in separate references");
+        }
+
+        [Test]
+        public void Build_LocalDocsWithSameDescription_Grouped()
+        {
+            // Arrange
+            var validation = new KosValidationResult();
+            var docEntry1 = CreateDocEntry("VESSEL:MASS", "MASS", "Gets mass", null);
+            var docEntry2 = CreateDocEntry("SHIP:MASS", "MASS", "Gets mass", null);
+
+            var verified1 = new VerifiedIdentifier("VESSEL:MASS", "VESSEL:MASS", null);
+            verified1.SourceDoc = docEntry1;
+            AddVerified(validation, verified1);
+
+            var verified2 = new VerifiedIdentifier("SHIP:MASS", "SHIP:MASS", null);
+            verified2.SourceDoc = docEntry2;
+            AddVerified(validation, verified2);
+
+            var docTracker = new DocEntryTracker();
+            docTracker.Add(docEntry1);
+            docTracker.Add(docEntry2);
+
+            // Act
+            var result = ReferenceBuilder.Build(validation, docTracker);
+
+            // Assert - both local docs with same description should be grouped
+            Assert.That(result, Does.Contain("`VESSEL:MASS`"));
+            Assert.That(result, Does.Contain("`SHIP:MASS`"));
+            Assert.That(ReferenceBuilder.CountReferences(result), Is.EqualTo(1),
+                "Local docs with same description should be grouped");
+        }
+
+        [Test]
+        public void CountReferences_GroupedFormat_CountsCorrectly()
+        {
+            // Arrange - grouped format with multiple identifiers on one line
+            var referencesSection = @"## References
+
+- `SHIP:ALTITUDE`, `VESSEL:ALTITUDE` - Gets vessel altitude ([docs](https://example.com))
+- `PRINT` - Outputs text (local)";
+
+            // Act
+            var count = ReferenceBuilder.CountReferences(referencesSection);
+
+            // Assert - should count 2 reference lines, not 3 identifiers
+            Assert.That(count, Is.EqualTo(2));
         }
 
         #endregion
@@ -180,7 +259,7 @@ namespace KSPCapcom.Tests.Validation
         }
 
         [Test]
-        public void Build_WithoutSourceUrl_ShowsLocalDocs()
+        public void Build_WithoutSourceUrl_ShowsLocal()
         {
             // Arrange
             var validation = new KosValidationResult();
@@ -197,7 +276,7 @@ namespace KSPCapcom.Tests.Validation
             var result = ReferenceBuilder.Build(validation, docTracker);
 
             // Assert
-            Assert.That(result, Does.Contain("(local docs)"));
+            Assert.That(result, Does.Contain("(local)"));
         }
 
         #endregion

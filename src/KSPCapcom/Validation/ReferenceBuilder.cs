@@ -42,8 +42,8 @@ namespace KSPCapcom.Validation
                 return string.Empty;
             }
 
-            // Build reference entries, deduplicating by DocEntry ID
-            var seenDocIds = new HashSet<string>(System.StringComparer.OrdinalIgnoreCase);
+            // Build reference entries, grouping by (SourceRef, Description) tuple
+            var referencesByKey = new Dictionary<string, ReferenceEntry>(System.StringComparer.OrdinalIgnoreCase);
             var references = new List<ReferenceEntry>();
 
             foreach (var verified in validation.Verified)
@@ -55,35 +55,42 @@ namespace KSPCapcom.Validation
                     sourceDoc = docTracker.FindByIdentifier(verified.Identifier);
                 }
 
-                // Create reference entry
-                var entry = new ReferenceEntry
-                {
-                    Identifier = verified.Identifier,
-                    DocEntryId = verified.DocEntryId,
-                    SourceRef = verified.SourceRef
-                };
+                // Determine description and source ref
+                string description = null;
+                string sourceRef = verified.SourceRef;
 
                 if (sourceDoc != null)
                 {
-                    entry.Description = TruncateDescription(sourceDoc.Description);
-                    entry.SourceRef = sourceDoc.SourceRef ?? entry.SourceRef;
+                    description = TruncateDescription(sourceDoc.Description);
+                    sourceRef = sourceDoc.SourceRef ?? sourceRef;
+                }
 
-                    // Deduplicate by doc ID
-                    if (!string.IsNullOrEmpty(sourceDoc.Id) && !seenDocIds.Add(sourceDoc.Id))
+                // Build composite key: "sourceRef|description" for grouping
+                string keySourceRef = sourceRef ?? "local";
+                string keyDescription = description ?? "";
+                string compositeKey = $"{keySourceRef}|{keyDescription}";
+
+                // Check if we already have an entry for this key
+                if (referencesByKey.TryGetValue(compositeKey, out var existingEntry))
+                {
+                    // Add identifier to existing entry if not already present
+                    if (!existingEntry.Identifiers.Contains(verified.Identifier))
                     {
-                        continue; // Already included this doc
+                        existingEntry.Identifiers.Add(verified.Identifier);
                     }
                 }
                 else
                 {
-                    // No doc found - still include the identifier with what we have
-                    if (!string.IsNullOrEmpty(verified.DocEntryId) && !seenDocIds.Add(verified.DocEntryId))
+                    // Create new entry
+                    var entry = new ReferenceEntry
                     {
-                        continue;
-                    }
+                        Description = description,
+                        SourceRef = sourceRef
+                    };
+                    entry.Identifiers.Add(verified.Identifier);
+                    referencesByKey[compositeKey] = entry;
+                    references.Add(entry);
                 }
-
-                references.Add(entry);
             }
 
             // No unique references to show
@@ -99,9 +106,19 @@ namespace KSPCapcom.Validation
 
             foreach (var entry in references)
             {
-                sb.Append("- `");
-                sb.Append(entry.Identifier);
-                sb.Append("`");
+                sb.Append("- ");
+
+                // Output all identifiers, comma-separated
+                for (int i = 0; i < entry.Identifiers.Count; i++)
+                {
+                    if (i > 0)
+                    {
+                        sb.Append(", ");
+                    }
+                    sb.Append("`");
+                    sb.Append(entry.Identifiers[i]);
+                    sb.Append("`");
+                }
 
                 if (!string.IsNullOrEmpty(entry.Description))
                 {
@@ -117,7 +134,7 @@ namespace KSPCapcom.Validation
                 }
                 else
                 {
-                    sb.Append(" (local docs)");
+                    sb.Append(" (local)");
                 }
 
                 sb.AppendLine();
@@ -150,11 +167,11 @@ namespace KSPCapcom.Validation
 
         /// <summary>
         /// Internal class to hold reference entry data.
+        /// Groups multiple identifiers that share the same (SourceRef, Description) tuple.
         /// </summary>
         private class ReferenceEntry
         {
-            public string Identifier { get; set; }
-            public string DocEntryId { get; set; }
+            public List<string> Identifiers { get; } = new List<string>();
             public string Description { get; set; }
             public string SourceRef { get; set; }
         }
