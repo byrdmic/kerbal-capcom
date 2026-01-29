@@ -65,6 +65,10 @@ namespace KSPCapcom
         private readonly MessageQueue _messageQueue;
         private CancellationTokenSource _currentRequestCts;
 
+        // Retry state - tracks context needed to retry the last failed request
+        private LastRequestContext? _lastRequestContext;
+        private int? _retryableErrorId;
+
         // Critique service
         private CritiqueService _critiqueService;
 
@@ -301,6 +305,15 @@ namespace KSPCapcom
                 return;
             }
 
+            // Capture context for potential retry
+            _lastRequestContext = new LastRequestContext
+            {
+                UserText = null,
+                WasCritiqueRequest = true,
+                WasAscentRequest = false,
+                Timestamp = DateTime.UtcNow
+            };
+
             var userMessage = ChatMessage.FromUser($"[Critique: {snapshot.CraftName}]");
             _messages.Add(userMessage);
             TrimMessageHistory();
@@ -334,6 +347,15 @@ namespace KSPCapcom
             {
                 AddSystemMessage(FormatWarning("No craft metrics available - script will use default parameters"));
             }
+
+            // Capture context for potential retry
+            _lastRequestContext = new LastRequestContext
+            {
+                UserText = null,
+                WasCritiqueRequest = false,
+                WasAscentRequest = true,
+                Timestamp = DateTime.UtcNow
+            };
 
             var userMessage = ChatMessage.FromUser($"[Ascent Script Request]");
             _messages.Add(userMessage);
@@ -384,13 +406,28 @@ namespace KSPCapcom
 
                     ParseAndValidateMessage(_pendingMessage);
                     CapcomCore.Log($"[Assistant] Critique complete");
+
+                    // Clear retry state on success
+                    _lastRequestContext = null;
+                    _retryableErrorId = null;
                 }
                 else
                 {
                     _messages.Remove(_pendingMessage);
                     var elapsed = (DateTime.UtcNow - _requestStartTime).TotalSeconds;
                     var errorData = BuildErrorMessageData(result.Error, elapsed);
-                    AddErrorMessage(errorData);
+                    int errorId = AddErrorMessageAndGetId(errorData);
+
+                    // Track retryable error for retry button
+                    if (errorData.IsRetryable && _lastRequestContext.HasValue)
+                    {
+                        _retryableErrorId = errorId;
+                    }
+                    else
+                    {
+                        _retryableErrorId = null;
+                    }
+
                     CapcomCore.LogError($"Critique error: {result.ErrorMessage}");
                 }
                 _pendingMessage = null;
@@ -409,6 +446,9 @@ namespace KSPCapcom
         {
             string text = _inputText.Trim();
             if (string.IsNullOrEmpty(text)) return;
+
+            // Clear retry state when user sends a new message
+            _retryableErrorId = null;
 
             bool willBeQueued = _responder.IsBusy || _pendingMessage != null;
 
@@ -449,6 +489,19 @@ namespace KSPCapcom
             {
                 CapcomCore.LogWarning("Already waiting for response, ignoring");
                 return;
+            }
+
+            // Capture context for potential retry (only if not already set by special handlers)
+            if (!_lastRequestContext.HasValue ||
+                (!_lastRequestContext.Value.WasCritiqueRequest && !_lastRequestContext.Value.WasAscentRequest))
+            {
+                _lastRequestContext = new LastRequestContext
+                {
+                    UserText = userText,
+                    WasCritiqueRequest = false,
+                    WasAscentRequest = false,
+                    Timestamp = DateTime.UtcNow
+                };
             }
 
             _pendingMessage = ChatMessage.FromAssistantPending();
@@ -493,13 +546,28 @@ namespace KSPCapcom
 
                     ParseAndValidateMessage(_pendingMessage);
                     CapcomCore.Log($"[Assistant] {result.Text}");
+
+                    // Clear retry state on success
+                    _lastRequestContext = null;
+                    _retryableErrorId = null;
                 }
                 else
                 {
                     _messages.Remove(_pendingMessage);
                     var elapsed = (DateTime.UtcNow - _requestStartTime).TotalSeconds;
                     var errorData = BuildErrorMessageData(result.Error, elapsed);
-                    AddErrorMessage(errorData);
+                    int errorId = AddErrorMessageAndGetId(errorData);
+
+                    // Track retryable error for retry button
+                    if (errorData.IsRetryable && _lastRequestContext.HasValue)
+                    {
+                        _retryableErrorId = errorId;
+                    }
+                    else
+                    {
+                        _retryableErrorId = null;
+                    }
+
                     CapcomCore.LogError($"Responder error: {result.ErrorMessage}");
                 }
                 _pendingMessage = null;
@@ -507,12 +575,24 @@ namespace KSPCapcom
             else if (result.Success)
             {
                 AddAssistantMessage(result.Text);
+                _lastRequestContext = null;
+                _retryableErrorId = null;
             }
             else
             {
                 var elapsed = (DateTime.UtcNow - _requestStartTime).TotalSeconds;
                 var errorData = BuildErrorMessageData(result.Error, elapsed);
-                AddErrorMessage(errorData);
+                int errorId = AddErrorMessageAndGetId(errorData);
+
+                if (errorData.IsRetryable && _lastRequestContext.HasValue)
+                {
+                    _retryableErrorId = errorId;
+                }
+                else
+                {
+                    _retryableErrorId = null;
+                }
+
                 CapcomCore.LogError($"Responder error: {result.ErrorMessage}");
             }
 
@@ -586,6 +666,10 @@ namespace KSPCapcom
             _currentRequestCts?.Cancel();
             _responder.Cancel();
             _messageQueue.Clear();
+
+            // Clear retry state on cancellation
+            _lastRequestContext = null;
+            _retryableErrorId = null;
 
             if (_pendingMessage != null)
             {
@@ -701,6 +785,11 @@ namespace KSPCapcom
             _scrollPosition = Vector2.zero;
             _shouldAutoScroll = true;
             _unseenMessageCount = 0;
+
+            // Clear retry state
+            _lastRequestContext = null;
+            _retryableErrorId = null;
+
             CapcomCore.Log("Chat history cleared");
         }
 
@@ -728,5 +817,67 @@ namespace KSPCapcom
             _windowRect.x = Mathf.Clamp(_windowRect.x, 0, Screen.width - _windowRect.width);
             _windowRect.y = Mathf.Clamp(_windowRect.y, 0, Screen.height - _windowRect.height);
         }
+
+        #region Retry Support
+
+        /// <summary>
+        /// Context needed to retry a failed request.
+        /// </summary>
+        private struct LastRequestContext
+        {
+            public string UserText;
+            public bool WasCritiqueRequest;
+            public bool WasAscentRequest;
+            public DateTime Timestamp;
+        }
+
+        /// <summary>
+        /// Retry the last failed request using stored context.
+        /// </summary>
+        private void RetryLastRequest()
+        {
+            if (!_lastRequestContext.HasValue) return;
+            if (IsWaitingForResponse) return;
+
+            var ctx = _lastRequestContext.Value;
+            _retryableErrorId = null;  // Clear to hide retry button
+
+            CapcomCore.Log($"Retrying last request (type: {(ctx.WasCritiqueRequest ? "critique" : ctx.WasAscentRequest ? "ascent" : "chat")})");
+
+            if (ctx.WasCritiqueRequest)
+            {
+                OnCritiqueClick();
+            }
+            else if (ctx.WasAscentRequest)
+            {
+                OnAscentScriptClick();
+            }
+            else
+            {
+                ProcessUserMessage(ctx.UserText);
+            }
+        }
+
+        /// <summary>
+        /// Check if retry is available for the given error.
+        /// </summary>
+        internal bool CanRetryError(int errorId, bool isRetryable)
+        {
+            return isRetryable
+                && _retryableErrorId.HasValue
+                && _retryableErrorId.Value == errorId
+                && !IsWaitingForResponse
+                && _lastRequestContext.HasValue;
+        }
+
+        /// <summary>
+        /// Called when the retry button is clicked.
+        /// </summary>
+        internal void OnRetryClick()
+        {
+            RetryLastRequest();
+        }
+
+        #endregion
     }
 }

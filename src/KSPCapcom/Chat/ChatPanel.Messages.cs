@@ -459,6 +459,9 @@ namespace KSPCapcom
             errorStyle.normal.textColor = textColor;
             GUILayout.Label(errorData.ShortMessage, errorStyle);
 
+            // Action row: Details disclosure and Retry button
+            GUILayout.BeginHorizontal();
+
             // Details disclosure (if available and not cancellation)
             if (errorData.HasDetails)
             {
@@ -479,20 +482,39 @@ namespace KSPCapcom
                     else
                         _expandedErrorIds.Add(message.ErrorId);
                 }
+            }
 
-                // Expanded details section
-                if (isExpanded)
+            // Retry button (only for the most recent retryable error when idle)
+            if (CanRetryError(message.ErrorId, errorData.IsRetryable))
+            {
+                var retryStyle = new GUIStyle(HighLogic.Skin.button)
                 {
-                    var detailsStyle = new GUIStyle(_messageStyle)
-                    {
-                        fontSize = FONT_SIZE_SMALL
-                    };
-                    detailsStyle.normal.textColor = COLOR_MUTED;
+                    fontSize = FONT_SIZE_SMALL,
+                    padding = new RectOffset(8, 8, 2, 2)
+                };
+                retryStyle.normal.textColor = COLOR_WARNING;
 
-                    GUILayout.BeginVertical(HighLogic.Skin.box);
-                    GUILayout.Label(errorData.TechnicalDetails, detailsStyle);
-                    GUILayout.EndVertical();
+                if (GUILayout.Button("Retry", retryStyle, GUILayout.ExpandWidth(false)))
+                {
+                    OnRetryClick();
                 }
+            }
+
+            GUILayout.FlexibleSpace();
+            GUILayout.EndHorizontal();
+
+            // Expanded details section
+            if (errorData.HasDetails && _expandedErrorIds.Contains(message.ErrorId))
+            {
+                var detailsStyle = new GUIStyle(_messageStyle)
+                {
+                    fontSize = FONT_SIZE_SMALL
+                };
+                detailsStyle.normal.textColor = COLOR_MUTED;
+
+                GUILayout.BeginVertical(HighLogic.Skin.box);
+                GUILayout.Label(errorData.TechnicalDetails, detailsStyle);
+                GUILayout.EndVertical();
             }
 
             GUILayout.EndVertical();
@@ -504,6 +526,14 @@ namespace KSPCapcom
         /// Add an error message with expandable details.
         /// </summary>
         private void AddErrorMessage(ErrorMessageData errorData)
+        {
+            AddErrorMessageAndGetId(errorData);
+        }
+
+        /// <summary>
+        /// Add an error message with expandable details and return its ID.
+        /// </summary>
+        private int AddErrorMessageAndGetId(ErrorMessageData errorData)
         {
             int errorId = _nextErrorId++;
             var message = ChatMessage.FromError(errorData.ShortMessage, errorId);
@@ -519,6 +549,7 @@ namespace KSPCapcom
                 _unseenMessageCount++;
             }
             CapcomCore.Log($"[Error] {errorData.ShortMessage}");
+            return errorId;
         }
     }
 }
