@@ -141,6 +141,37 @@ The presence of these lines confirms:
 
 ---
 
+## 8. Script Save Security Tests
+
+Manual verification of save guardrails to prevent path traversal and validate filenames.
+
+### Filename Validation
+
+| Test | Action | Expected Result |
+|------|--------|-----------------|
+| 8.1 | Try to save with empty filename | Error: "Filename cannot be empty" |
+| 8.2 | Try to save with filename containing `/` (e.g., `dir/script`) | Error: "Filename cannot contain path separators" |
+| 8.3 | Try to save with reserved name (e.g., `CON`, `NUL`, `COM1`) | Error: "'CON' is a reserved filename" |
+| 8.4 | Try to save with very long filename (65+ chars before `.ks`) | Error: "Filename too long (max 64 characters before extension)" |
+| 8.5 | Try to save with filename ending in dot before extension (e.g., `script..ks`) | Error: "Filename cannot end with a dot or space" |
+| 8.6 | Try to save with filename containing `..` | Error: "Filename cannot contain path separators" |
+
+### Save Flow
+
+| Test | Action | Expected Result |
+|------|--------|-----------------|
+| 8.7 | Save script with valid filename | Success message, file appears in archive |
+| 8.8 | Save script with same filename again | Overwrite confirmation dialog appears |
+| 8.9 | Confirm overwrite | File is overwritten, success message shows "(overwritten)" |
+| 8.10 | Cancel overwrite | File is not modified, dialog closes |
+
+**Notes:**
+- All error messages should appear inline in the save dialog
+- File browser should not allow navigation outside archive folder
+- No files should be created outside the configured archive path
+
+---
+
 ## Quick Pass Summary
 
 After completing all steps, check:

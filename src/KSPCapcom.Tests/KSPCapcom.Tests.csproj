@@ -45,6 +45,7 @@
     <Compile Include="..\KSPCapcom\Validation\ValidationFeedbackBuilder.cs" Link="Validation\ValidationFeedbackBuilder.cs" />
     <Compile Include="..\KSPCapcom\Editor\ReadinessMetrics.cs" Link="Editor\ReadinessMetrics.cs" />
     <Compile Include="..\KSPCapcom\Parsing\CodeBlockParser.cs" Link="Parsing\CodeBlockParser.cs" />
+    <Compile Include="..\KSPCapcom\IO\ScriptSaver.cs" Link="IO\ScriptSaver.cs" />
   </ItemGroup>
 
 </Project>

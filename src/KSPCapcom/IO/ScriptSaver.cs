@@ -88,6 +88,11 @@ namespace KSPCapcom.IO
         private static readonly char[] InvalidChars = new char[] { '<', '>', ':', '"', '|', '?', '*' };
 
         /// <summary>
+        /// Maximum length for filename (before extension).
+        /// </summary>
+        private const int MaxFilenameLength = 64;
+
+        /// <summary>
         /// Pattern for extracting script type from prompts.
         /// </summary>
         private static readonly Regex ScriptTypePattern = new Regex(
@@ -126,6 +131,13 @@ namespace KSPCapcom.IO
             string normalizedFilename = NormalizeFilename(filename);
             string fullPath = Path.Combine(archivePath, normalizedFilename);
 
+            // Validate path is within archive (defense-in-depth against path traversal)
+            var pathValidation = ValidateSavePath(archivePath, fullPath);
+            if (!pathValidation.IsValid)
+            {
+                return SaveResult.Fail(pathValidation.Error);
+            }
+
             try
             {
                 File.WriteAllText(fullPath, content);
@@ -159,8 +171,21 @@ namespace KSPCapcom.IO
                 return false;
             }
 
+            var validation = ValidateFilename(filename);
+            if (!validation.IsValid)
+            {
+                return false;
+            }
+
             string normalizedFilename = NormalizeFilename(filename);
             string fullPath = Path.Combine(archivePath, normalizedFilename);
+
+            var pathValidation = ValidateSavePath(archivePath, fullPath);
+            if (!pathValidation.IsValid)
+            {
+                return false;
+            }
+
             return File.Exists(fullPath);
         }
 
@@ -191,6 +216,15 @@ namespace KSPCapcom.IO
                 return ValidationResult.Invalid("Filename cannot contain path separators");
             }
 
+            // Control characters (ASCII 0-31)
+            foreach (char c in filename)
+            {
+                if (c < 32)
+                {
+                    return ValidationResult.Invalid("Filename cannot contain control characters");
+                }
+            }
+
             // Invalid Windows characters
             foreach (char c in InvalidChars)
             {
@@ -200,17 +234,56 @@ namespace KSPCapcom.IO
                 }
             }
 
-            // Get name without extension for reserved name check
-            string nameWithoutExt = Path.GetFileNameWithoutExtension(filename).ToUpperInvariant();
+            // Get name without extension for remaining checks
+            string nameWithoutExt = Path.GetFileNameWithoutExtension(filename);
+
+            // Windows silently strips trailing dots and spaces
+            if (nameWithoutExt.EndsWith(".") || nameWithoutExt.EndsWith(" "))
+            {
+                return ValidationResult.Invalid("Filename cannot end with a dot or space");
+            }
+
+            // Length check
+            if (nameWithoutExt.Length > MaxFilenameLength)
+            {
+                return ValidationResult.Invalid($"Filename too long (max {MaxFilenameLength} characters before extension)");
+            }
+
+            // Reserved Windows filenames
+            string nameUpper = nameWithoutExt.ToUpperInvariant();
             foreach (string reserved in ReservedNames)
             {
-                if (nameWithoutExt == reserved)
+                if (nameUpper == reserved)
                 {
                     return ValidationResult.Invalid($"'{reserved}' is a reserved filename");
                 }
             }
 
             return ValidationResult.Ok();
+        }
+
+        /// <summary>
+        /// Validate that the resolved save path is safely within the archive directory.
+        /// </summary>
+        private ValidationResult ValidateSavePath(string archivePath, string resolvedPath)
+        {
+            try
+            {
+                string canonicalArchive = Path.GetFullPath(archivePath)
+                    .TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+                string canonicalResolved = Path.GetFullPath(resolvedPath);
+                string archivePrefix = canonicalArchive + Path.DirectorySeparatorChar;
+
+                if (!canonicalResolved.StartsWith(archivePrefix, StringComparison.OrdinalIgnoreCase))
+                {
+                    return ValidationResult.Invalid("Save path must be within the archive folder");
+                }
+                return ValidationResult.Ok();
+            }
+            catch (Exception)
+            {
+                return ValidationResult.Invalid("Invalid save path");
+            }
         }
 
         /// <summary>
