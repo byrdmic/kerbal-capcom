@@ -529,7 +529,19 @@ namespace KSPCapcom
 
             try
             {
-                var parsed = _codeBlockParser.Parse(message.Text);
+                // Extract references section before parsing code blocks
+                string textToParse = message.Text;
+                string referencesSection = ReferenceBuilder.ParseReferencesSection(message.Text, out textToParse);
+
+                if (!string.IsNullOrEmpty(referencesSection))
+                {
+                    int refCount = ReferenceBuilder.CountReferences(referencesSection);
+                    message.SetReferences(referencesSection, refCount);
+                    CapcomCore.Log($"ChatPanel: Extracted references section with {refCount} reference(s)");
+                }
+
+                // Parse code blocks from text (without references section)
+                var parsed = _codeBlockParser.Parse(textToParse);
                 message.SetParsedContent(parsed);
 
                 if (parsed.HasCodeBlocks)
@@ -684,6 +696,8 @@ namespace KSPCapcom
             _messages.Clear();
             _errorMessageData.Clear();
             _expandedErrorIds.Clear();
+            _expandedReferenceIds.Clear();
+            _messageReferenceIds.Clear();
             _scrollPosition = Vector2.zero;
             _shouldAutoScroll = true;
             _unseenMessageCount = 0;

@@ -243,6 +243,165 @@ namespace KSPCapcom.Tests.Validation
 
         #endregion
 
+        #region ParseReferencesSection Tests
+
+        [Test]
+        public void ParseReferencesSection_WithReferencesSection_ExtractsSection()
+        {
+            // Arrange
+            var messageText = @"Here is some code:
+```kos
+PRINT ""Hello"".
+```
+
+## References
+
+- `PRINT` - Outputs text ([docs](https://example.com))
+- `SHIP` - The vessel object ([docs](https://example.com))";
+
+            // Act
+            var result = ReferenceBuilder.ParseReferencesSection(messageText, out var textWithoutRefs);
+
+            // Assert
+            Assert.That(result, Is.Not.Null);
+            Assert.That(result, Does.Contain("## References"));
+            Assert.That(result, Does.Contain("`PRINT`"));
+            Assert.That(result, Does.Contain("`SHIP`"));
+            Assert.That(textWithoutRefs, Does.Not.Contain("## References"));
+            Assert.That(textWithoutRefs, Does.Contain("Here is some code"));
+        }
+
+        [Test]
+        public void ParseReferencesSection_NoReferencesSection_ReturnsNull()
+        {
+            // Arrange
+            var messageText = @"Here is some code:
+```kos
+PRINT ""Hello"".
+```
+
+That's all!";
+
+            // Act
+            var result = ReferenceBuilder.ParseReferencesSection(messageText, out var textWithoutRefs);
+
+            // Assert
+            Assert.That(result, Is.Null);
+            Assert.That(textWithoutRefs, Is.EqualTo(messageText));
+        }
+
+        [Test]
+        public void ParseReferencesSection_EmptyText_ReturnsNull()
+        {
+            var result = ReferenceBuilder.ParseReferencesSection("", out var textWithoutRefs);
+
+            Assert.That(result, Is.Null);
+            Assert.That(textWithoutRefs, Is.Empty);
+        }
+
+        [Test]
+        public void ParseReferencesSection_NullText_ReturnsNull()
+        {
+            var result = ReferenceBuilder.ParseReferencesSection(null, out var textWithoutRefs);
+
+            Assert.That(result, Is.Null);
+            Assert.That(textWithoutRefs, Is.Null);
+        }
+
+        [Test]
+        public void ParseReferencesSection_ReferencesAtEnd_ExtractsToEndOfMessage()
+        {
+            // Arrange
+            var messageText = @"Introduction text.
+
+## References
+
+- `FOO` - Description";
+
+            // Act
+            var result = ReferenceBuilder.ParseReferencesSection(messageText, out var textWithoutRefs);
+
+            // Assert
+            Assert.That(result, Does.Contain("`FOO`"));
+            Assert.That(textWithoutRefs.Trim(), Is.EqualTo("Introduction text."));
+        }
+
+        [Test]
+        public void ParseReferencesSection_CaseInsensitive_MatchesHeader()
+        {
+            // Arrange
+            var messageText = @"Text
+
+## REFERENCES
+
+- `BAR` - Something";
+
+            // Act
+            var result = ReferenceBuilder.ParseReferencesSection(messageText, out var textWithoutRefs);
+
+            // Assert
+            Assert.That(result, Is.Not.Null);
+            Assert.That(result, Does.Contain("`BAR`"));
+        }
+
+        #endregion
+
+        #region CountReferences Tests
+
+        [Test]
+        public void CountReferences_MultipleReferences_ReturnsCorrectCount()
+        {
+            var referencesSection = @"## References
+
+- `PRINT` - Outputs text
+- `SHIP` - The vessel
+- `ALTITUDE` - Height above terrain";
+
+            var count = ReferenceBuilder.CountReferences(referencesSection);
+
+            Assert.That(count, Is.EqualTo(3));
+        }
+
+        [Test]
+        public void CountReferences_SingleReference_ReturnsOne()
+        {
+            var referencesSection = @"## References
+
+- `PRINT` - Outputs text";
+
+            var count = ReferenceBuilder.CountReferences(referencesSection);
+
+            Assert.That(count, Is.EqualTo(1));
+        }
+
+        [Test]
+        public void CountReferences_NoReferences_ReturnsZero()
+        {
+            var referencesSection = @"## References
+
+_No documentation references available._";
+
+            var count = ReferenceBuilder.CountReferences(referencesSection);
+
+            Assert.That(count, Is.EqualTo(0));
+        }
+
+        [Test]
+        public void CountReferences_EmptyString_ReturnsZero()
+        {
+            var count = ReferenceBuilder.CountReferences("");
+            Assert.That(count, Is.EqualTo(0));
+        }
+
+        [Test]
+        public void CountReferences_NullString_ReturnsZero()
+        {
+            var count = ReferenceBuilder.CountReferences(null);
+            Assert.That(count, Is.EqualTo(0));
+        }
+
+        #endregion
+
         #region Helper Methods
 
         private static DocEntry CreateDocEntry(string id, string name, string description, string sourceRef)

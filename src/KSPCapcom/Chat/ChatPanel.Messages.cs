@@ -12,6 +12,16 @@ namespace KSPCapcom
         private readonly HashSet<int> _expandedErrorIds = new HashSet<int>();
         private int _nextErrorId = 0;
 
+        // References disclosure tracking (by message index)
+        private readonly HashSet<int> _expandedReferenceIds = new HashSet<int>();
+        private int _nextReferenceId = 0;
+        private readonly Dictionary<ChatMessage, int> _messageReferenceIds = new Dictionary<ChatMessage, int>();
+
+        /// <summary>
+        /// Maximum height for expanded references content area.
+        /// </summary>
+        private const float MAX_REFERENCES_HEIGHT = 150f;
+
         // Code block parsing and rendering
         private readonly CodeBlockParser _codeBlockParser = new CodeBlockParser();
         private readonly ScriptCardRenderer _scriptCardRenderer = new ScriptCardRenderer();
@@ -143,8 +153,9 @@ namespace KSPCapcom
                 return;
             }
 
-            // Use parsed rendering for completed assistant messages with code blocks
-            if (!message.IsPending && message.HasCodeBlocks && message.Role == MessageRole.Assistant)
+            // Use parsed rendering for completed assistant messages with code blocks or references
+            if (!message.IsPending && message.Role == MessageRole.Assistant &&
+                (message.HasCodeBlocks || message.HasReferences))
             {
                 DrawParsedMessage(message);
                 return;
@@ -255,9 +266,140 @@ namespace KSPCapcom
                 }
             }
 
+            // Draw references disclosure if message has references
+            if (message.HasReferences)
+            {
+                DrawReferencesDisclosure(message);
+            }
+
             GUILayout.EndVertical();
             GUILayout.FlexibleSpace();
             GUILayout.EndHorizontal();
+        }
+
+        /// <summary>
+        /// Draw the collapsible references disclosure section.
+        /// </summary>
+        private void DrawReferencesDisclosure(ChatMessage message)
+        {
+            // Get or assign a reference ID for this message
+            if (!_messageReferenceIds.TryGetValue(message, out int refId))
+            {
+                refId = _nextReferenceId++;
+                _messageReferenceIds[message] = refId;
+            }
+
+            bool isExpanded = _expandedReferenceIds.Contains(refId);
+            string disclosureLabel = isExpanded
+                ? $"\u25bc References ({message.ReferencesCount})"
+                : $"\u25b6 References ({message.ReferencesCount})";
+
+            // Create disclosure button style
+            var disclosureStyle = new GUIStyle(HighLogic.Skin.button)
+            {
+                fontSize = FONT_SIZE_SMALL,
+                padding = new RectOffset(4, 4, 2, 2),
+                alignment = TextAnchor.MiddleLeft
+            };
+            disclosureStyle.normal.textColor = COLOR_MUTED;
+
+            GUILayout.Space(4);
+
+            if (GUILayout.Button(disclosureLabel, disclosureStyle, GUILayout.ExpandWidth(false)))
+            {
+                if (isExpanded)
+                {
+                    _expandedReferenceIds.Remove(refId);
+                }
+                else
+                {
+                    _expandedReferenceIds.Add(refId);
+                }
+                // Note: We do NOT call ScrollToBottom() here to avoid scroll jumps
+            }
+
+            // Expanded references content
+            if (isExpanded)
+            {
+                DrawExpandedReferences(message.ReferencesText);
+            }
+        }
+
+        /// <summary>
+        /// Draw the expanded references content in a scrollable area.
+        /// </summary>
+        private void DrawExpandedReferences(string referencesText)
+        {
+            // Create muted style for references content
+            var referencesStyle = new GUIStyle(_messageStyle)
+            {
+                fontSize = FONT_SIZE_SMALL,
+                wordWrap = true
+            };
+            referencesStyle.normal.textColor = COLOR_MUTED;
+
+            // Render in a fixed-height box with potential scroll
+            GUILayout.BeginVertical(HighLogic.Skin.box);
+
+            // Calculate content height - we'll use GUILayout's automatic handling
+            // but cap the max height to prevent huge reference sections
+            var content = new GUIContent(FormatReferencesForDisplay(referencesText));
+            float contentHeight = referencesStyle.CalcHeight(content, _windowRect.width * 0.75f);
+
+            if (contentHeight > MAX_REFERENCES_HEIGHT)
+            {
+                // Need scrolling - use a scroll view with max height
+                GUILayout.BeginScrollView(
+                    Vector2.zero,
+                    false,
+                    true,
+                    GUILayout.MaxHeight(MAX_REFERENCES_HEIGHT));
+                GUILayout.Label(FormatReferencesForDisplay(referencesText), referencesStyle);
+                GUILayout.EndScrollView();
+            }
+            else
+            {
+                // Content fits - render directly
+                GUILayout.Label(FormatReferencesForDisplay(referencesText), referencesStyle);
+            }
+
+            GUILayout.EndVertical();
+        }
+
+        /// <summary>
+        /// Format references text for display (strip header, clean up formatting).
+        /// </summary>
+        private string FormatReferencesForDisplay(string referencesText)
+        {
+            if (string.IsNullOrEmpty(referencesText))
+            {
+                return string.Empty;
+            }
+
+            // Remove the "## References" header line for display
+            var lines = referencesText.Split(new[] { '\n', '\r' }, System.StringSplitOptions.RemoveEmptyEntries);
+            var sb = new System.Text.StringBuilder();
+
+            foreach (var line in lines)
+            {
+                string trimmed = line.Trim();
+                // Skip the header line
+                if (trimmed.StartsWith("##") && trimmed.ToLowerInvariant().Contains("references"))
+                {
+                    continue;
+                }
+                // Skip empty warning message
+                if (trimmed.StartsWith("_No documentation references"))
+                {
+                    continue;
+                }
+                if (!string.IsNullOrWhiteSpace(trimmed))
+                {
+                    sb.AppendLine(trimmed);
+                }
+            }
+
+            return sb.ToString().TrimEnd();
         }
 
         /// <summary>

@@ -1,5 +1,7 @@
+using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Text.RegularExpressions;
 using KSPCapcom.KosDocs;
 
 namespace KSPCapcom.Validation
@@ -155,6 +157,91 @@ namespace KSPCapcom.Validation
             public string DocEntryId { get; set; }
             public string Description { get; set; }
             public string SourceRef { get; set; }
+        }
+
+        /// <summary>
+        /// Pattern to match the start of a references section in message text.
+        /// Matches "## References" at the start of a line.
+        /// </summary>
+        private static readonly Regex ReferencesHeaderPattern = new Regex(
+            @"^##\s+References\s*$",
+            RegexOptions.Multiline | RegexOptions.IgnoreCase);
+
+        /// <summary>
+        /// Pattern to match reference list items.
+        /// Matches lines starting with "- `identifier`"
+        /// </summary>
+        private static readonly Regex ReferenceItemPattern = new Regex(
+            @"^-\s+`[^`]+`",
+            RegexOptions.Multiline);
+
+        /// <summary>
+        /// Parse and extract the references section from a message text.
+        /// Returns the extracted section and modifies the message text to remove it.
+        /// </summary>
+        /// <param name="messageText">The full message text.</param>
+        /// <param name="textWithoutReferences">The message text with the references section removed.</param>
+        /// <returns>The extracted references section, or null if none found.</returns>
+        public static string ParseReferencesSection(string messageText, out string textWithoutReferences)
+        {
+            textWithoutReferences = messageText;
+
+            if (string.IsNullOrEmpty(messageText))
+            {
+                return null;
+            }
+
+            var match = ReferencesHeaderPattern.Match(messageText);
+            if (!match.Success)
+            {
+                return null;
+            }
+
+            // Find the start of the references section
+            int sectionStart = match.Index;
+
+            // The references section extends to the end of the message
+            // or until a new section header (## Something)
+            int sectionEnd = messageText.Length;
+
+            // Look for another section header after references
+            var nextSectionMatch = Regex.Match(
+                messageText.Substring(match.Index + match.Length),
+                @"^##\s+\w",
+                RegexOptions.Multiline);
+
+            if (nextSectionMatch.Success)
+            {
+                sectionEnd = match.Index + match.Length + nextSectionMatch.Index;
+            }
+
+            // Extract the references section
+            string referencesSection = messageText.Substring(sectionStart, sectionEnd - sectionStart).Trim();
+
+            // Remove the references section from the message text
+            textWithoutReferences = messageText.Substring(0, sectionStart).TrimEnd();
+            if (sectionEnd < messageText.Length)
+            {
+                textWithoutReferences += messageText.Substring(sectionEnd);
+            }
+
+            return referencesSection;
+        }
+
+        /// <summary>
+        /// Count the number of references in a references section.
+        /// </summary>
+        /// <param name="referencesSection">The extracted references section text.</param>
+        /// <returns>The count of reference items found.</returns>
+        public static int CountReferences(string referencesSection)
+        {
+            if (string.IsNullOrEmpty(referencesSection))
+            {
+                return 0;
+            }
+
+            var matches = ReferenceItemPattern.Matches(referencesSection);
+            return matches.Count;
         }
     }
 }

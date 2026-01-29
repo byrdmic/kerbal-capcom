@@ -48,6 +48,21 @@ namespace KSPCapcom
         public bool HasCodeBlocks => ParsedContent?.HasCodeBlocks ?? false;
 
         /// <summary>
+        /// Extracted references section text (for collapsible display in grounded mode).
+        /// </summary>
+        public string ReferencesText { get; private set; }
+
+        /// <summary>
+        /// Number of references in the extracted section.
+        /// </summary>
+        public int ReferencesCount { get; private set; }
+
+        /// <summary>
+        /// Whether this message has references to display.
+        /// </summary>
+        public bool HasReferences => !string.IsNullOrEmpty(ReferencesText) && ReferencesCount > 0;
+
+        /// <summary>
         /// Convenience property for backward compatibility.
         /// </summary>
         public bool IsFromUser => Role == MessageRole.User;
@@ -100,6 +115,17 @@ namespace KSPCapcom
         public void SetParsedContent(ParsedMessageContent content)
         {
             ParsedContent = content;
+        }
+
+        /// <summary>
+        /// Set the extracted references section for this message.
+        /// </summary>
+        /// <param name="referencesText">The full references section text.</param>
+        /// <param name="count">The number of references.</param>
+        public void SetReferences(string referencesText, int count)
+        {
+            ReferencesText = referencesText;
+            ReferencesCount = count;
         }
 
         public static ChatMessage FromUser(string text, bool isQueued = false) =>
