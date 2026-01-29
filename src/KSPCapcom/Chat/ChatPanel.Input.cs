@@ -19,6 +19,28 @@ namespace KSPCapcom
         // Pinned prompts UI state
         private bool _pinsExpanded = false;
 
+        // Template menu state
+        private bool _templatesMenuOpen = false;
+
+        // Template scene filter
+        private enum TemplateScene { Any, EditorOnly, FlightOnly }
+
+        // Template data structure
+        private struct PromptTemplate
+        {
+            public string Label;
+            public string Text;
+            public TemplateScene Scene;
+        }
+
+        // Curated templates list
+        private static readonly PromptTemplate[] PROMPT_TEMPLATES = new[]
+        {
+            new PromptTemplate { Label = "LKO Ascent", Text = "Write a kOS script for LKO ascent for this craft", Scene = TemplateScene.EditorOnly },
+            new PromptTemplate { Label = "Design Critique", Text = "Critique this craft design and suggest improvements", Scene = TemplateScene.EditorOnly },
+            new PromptTemplate { Label = "Rendezvous Help", Text = "Help me plan a rendezvous with my target", Scene = TemplateScene.FlightOnly },
+        };
+
         /// <summary>
         /// Check if any settings text field or editor panel currently has focus.
         /// </summary>
@@ -328,38 +350,61 @@ namespace KSPCapcom
         /// </summary>
         private void DrawPinnedPromptsRow()
         {
-            if (_pinnedPrompts == null || _pinnedPrompts.Count == 0)
+            bool hasPins = _pinnedPrompts != null && _pinnedPrompts.Count > 0;
+            int visibleTemplates = CountVisibleTemplates();
+
+            // Skip entire row if nothing to show
+            if (!hasPins && visibleTemplates == 0)
                 return;
 
             GUILayout.BeginHorizontal();
 
-            // Toggle button to expand/collapse
-            string toggleLabel = _pinsExpanded ? "▼ Pins" : "► Pins";
-            if (GUILayout.Button(toggleLabel, _pinnedButtonStyle, GUILayout.Width(50)))
+            // Pins toggle (only if pins exist)
+            if (hasPins)
             {
-                _pinsExpanded = !_pinsExpanded;
-            }
-
-            // Show pinned prompts as buttons when expanded
-            if (_pinsExpanded)
-            {
-                var pinned = _pinnedPrompts.GetPinned();
-                foreach (var prompt in pinned)
+                string toggleLabel = _pinsExpanded ? "▼ Pins" : "► Pins";
+                if (GUILayout.Button(toggleLabel, _pinnedButtonStyle, GUILayout.Width(50)))
                 {
-                    if (GUILayout.Button(prompt.DisplayLabel, _pinnedButtonStyle, GUILayout.MaxWidth(100)))
-                    {
-                        // Insert into input field (do not auto-send)
-                        _inputText = prompt.Text;
-                        _focusInputFrames = FOCUS_FRAME_COUNT;
-                        ResetHistoryNavigation();
-                        CapcomCore.Log($"Inserted pinned prompt: {prompt.DisplayLabel}");
-                    }
+                    _pinsExpanded = !_pinsExpanded;
                 }
 
-                GUILayout.FlexibleSpace();
+                // Show pinned prompts as buttons when expanded
+                if (_pinsExpanded)
+                {
+                    var pinned = _pinnedPrompts.GetPinned();
+                    foreach (var prompt in pinned)
+                    {
+                        if (GUILayout.Button(prompt.DisplayLabel, _pinnedButtonStyle, GUILayout.MaxWidth(100)))
+                        {
+                            // Insert into input field (do not auto-send)
+                            _inputText = prompt.Text;
+                            _focusInputFrames = FOCUS_FRAME_COUNT;
+                            ResetHistoryNavigation();
+                            CapcomCore.Log($"Inserted pinned prompt: {prompt.DisplayLabel}");
+                        }
+                    }
+                }
+            }
+
+            GUILayout.FlexibleSpace();
+
+            // Templates toggle (only if templates visible in current scene)
+            if (visibleTemplates > 0)
+            {
+                string templatesLabel = _templatesMenuOpen ? "▼ Templates" : "► Templates";
+                if (GUILayout.Button(templatesLabel, _pinnedButtonStyle, GUILayout.Width(75)))
+                {
+                    _templatesMenuOpen = !_templatesMenuOpen;
+                }
             }
 
             GUILayout.EndHorizontal();
+
+            // Draw templates popup if open
+            if (_templatesMenuOpen)
+            {
+                DrawTemplatesPopup();
+            }
         }
 
         /// <summary>
@@ -403,6 +448,132 @@ namespace KSPCapcom
                     }
                 }
             }
+        }
+
+        #endregion
+
+        #region Prompt Templates UI
+
+        /// <summary>
+        /// Count templates visible in the current scene.
+        /// </summary>
+        private int CountVisibleTemplates()
+        {
+            bool isEditor = HighLogic.LoadedSceneIsEditor;
+            int count = 0;
+            foreach (var template in PROMPT_TEMPLATES)
+            {
+                if (IsTemplateVisibleInCurrentScene(template.Scene, isEditor))
+                {
+                    count++;
+                }
+            }
+            return count;
+        }
+
+        /// <summary>
+        /// Check if a template should be visible in the current scene.
+        /// </summary>
+        private bool IsTemplateVisibleInCurrentScene(TemplateScene scene, bool isEditor)
+        {
+            switch (scene)
+            {
+                case TemplateScene.Any:
+                    return true;
+                case TemplateScene.EditorOnly:
+                    return isEditor;
+                case TemplateScene.FlightOnly:
+                    return !isEditor;
+                default:
+                    return false;
+            }
+        }
+
+        /// <summary>
+        /// Draw the templates popup menu.
+        /// </summary>
+        private void DrawTemplatesPopup()
+        {
+            bool isEditor = HighLogic.LoadedSceneIsEditor;
+            Event e = Event.current;
+
+            // Handle Escape to close popup
+            if (e.type == EventType.KeyDown && e.keyCode == KeyCode.Escape)
+            {
+                _templatesMenuOpen = false;
+                e.Use();
+                return;
+            }
+
+            // Count visible templates to calculate height
+            int visibleCount = CountVisibleTemplates();
+            if (visibleCount == 0)
+            {
+                _templatesMenuOpen = false;
+                return;
+            }
+
+            // Popup dimensions
+            float popupWidth = 180f;
+            float buttonHeight = 24f;
+            float padding = 8f;
+            float popupHeight = visibleCount * buttonHeight + padding * 2;
+
+            // Position: right-aligned within window, below the pins row
+            // Window rect is stored in _windowRect
+            float popupX = _windowRect.width - popupWidth - 12f;
+            float popupY = 85f; // Below title bar and pins row
+
+            Rect popupRect = new Rect(popupX, popupY, popupWidth, popupHeight);
+
+            // Draw popup background
+            GUI.Box(popupRect, GUIContent.none, HighLogic.Skin.box);
+
+            // Draw template buttons inside the popup
+            GUILayout.BeginArea(new Rect(popupRect.x + padding, popupRect.y + padding,
+                                         popupRect.width - padding * 2, popupRect.height - padding * 2));
+            GUILayout.BeginVertical();
+
+            foreach (var template in PROMPT_TEMPLATES)
+            {
+                if (!IsTemplateVisibleInCurrentScene(template.Scene, isEditor))
+                    continue;
+
+                if (GUILayout.Button(template.Label, _pinnedButtonStyle, GUILayout.Height(buttonHeight - 4)))
+                {
+                    InsertTemplateText(template.Text);
+                    _templatesMenuOpen = false;
+                    CapcomCore.Log($"Inserted template: {template.Label}");
+                }
+            }
+
+            GUILayout.EndVertical();
+            GUILayout.EndArea();
+
+            // Handle click outside to close (on mouse down)
+            if (e.type == EventType.MouseDown && !popupRect.Contains(e.mousePosition))
+            {
+                _templatesMenuOpen = false;
+                e.Use();
+            }
+        }
+
+        /// <summary>
+        /// Insert template text into input field.
+        /// Empty: replace. Has content: append with newline.
+        /// </summary>
+        private void InsertTemplateText(string templateText)
+        {
+            if (string.IsNullOrWhiteSpace(_inputText))
+            {
+                _inputText = templateText;
+            }
+            else
+            {
+                _inputText = _inputText.TrimEnd() + "\n" + templateText;
+            }
+            _focusInputFrames = FOCUS_FRAME_COUNT;
+            ResetHistoryNavigation();
         }
 
         #endregion

@@ -172,6 +172,49 @@ Manual verification of save guardrails to prevent path traversal and validate fi
 
 ---
 
+## 9. Prompt Templates Menu
+
+Validation that the curated templates menu appears and functions correctly based on scene context.
+
+### Templates Button Visibility
+
+| Step | Action | Pass | Fail |
+|------|--------|------|------|
+| 9.1 | Open chat panel in VAB | "Templates" button visible in pins row | Button missing |
+| 9.2 | Open chat panel in Flight | "Templates" button visible in pins row | Button missing |
+
+### Scene Filtering
+
+| Step | Action | Pass | Fail |
+|------|--------|------|------|
+| 9.3 | In VAB, click Templates button | Popup shows "LKO Ascent" and "Design Critique" | Wrong templates or popup doesn't appear |
+| 9.4 | In VAB, verify "Rendezvous Help" is NOT shown | Template is hidden (flight-only) | Template incorrectly visible |
+| 9.5 | In Flight, click Templates button | Popup shows "Rendezvous Help" | Wrong templates |
+| 9.6 | In Flight, verify "LKO Ascent" and "Design Critique" are NOT shown | Templates are hidden (editor-only) | Templates incorrectly visible |
+
+### Insertion Behavior
+
+| Step | Action | Pass | Fail |
+|------|--------|------|------|
+| 9.7 | With empty input, select "LKO Ascent" template | Text replaces input, popup closes, input focused | Text not inserted or popup stays open |
+| 9.8 | With existing text in input, select "Design Critique" template | Template text appended with newline | Text replaced instead of appended |
+| 9.9 | Verify no auto-send after template selection | Message stays in input field (not sent) | Message auto-sent |
+
+### Popup Dismiss Behavior
+
+| Step | Action | Pass | Fail |
+|------|--------|------|------|
+| 9.10 | Open templates popup, press Escape | Popup closes | Popup stays open |
+| 9.11 | Open templates popup, click outside popup area | Popup closes | Popup stays open |
+| 9.12 | Open templates popup, select a template | Popup closes after selection | Popup stays open |
+
+**Notes:**
+- Templates button uses same style as Pins button for visual consistency
+- Popup is positioned right-aligned, below the pins row
+- Template selection should focus the input field
+
+---
+
 ## Quick Pass Summary
 
 After completing all steps, check:
