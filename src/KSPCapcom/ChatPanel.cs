@@ -579,7 +579,9 @@ namespace KSPCapcom
             {
                 if (result.Success)
                 {
-                    if (string.IsNullOrEmpty(_pendingMessage.Text) || _pendingMessage.Text == "CAPCOM is thinking...")
+                    if (string.IsNullOrEmpty(_pendingMessage.Text) ||
+                        _pendingMessage.Text == "CAPCOM is thinking..." ||
+                        _pendingMessage.Text == "Generating ascent script...")
                     {
                         _pendingMessage.Complete(result.Text);
                     }
