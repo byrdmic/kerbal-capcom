@@ -136,6 +136,7 @@
     <Compile Include="UI\ScriptCardRenderer.cs" />
     <Compile Include="UI\ScriptEditorPanel.cs" />
     <Compile Include="IO\ScriptSaver.cs" />
+    <Compile Include="PinnedPromptStore.cs" />
     <Compile Include="SecretStore.cs" />
     <Compile Include="ToolbarButton.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

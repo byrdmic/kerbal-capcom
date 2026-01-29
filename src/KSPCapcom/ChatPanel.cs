@@ -75,9 +75,10 @@ namespace KSPCapcom
         // Script editor panel
         private ScriptEditorPanel _scriptEditorPanel;
 
-        // Settings and secrets
+        // Settings, secrets, and pinned prompts
         private readonly CapcomSettings _settings;
         private readonly SecretStore _secrets;
+        private readonly PinnedPromptStore _pinnedPrompts;
 
         // Auto-scroll management
         private bool _shouldAutoScroll = true;
@@ -99,23 +100,28 @@ namespace KSPCapcom
         /// </summary>
         public int MessageCount => _messages.Count;
 
-        public ChatPanel() : this(new EchoResponder(), null, null)
+        public ChatPanel() : this(new EchoResponder(), null, null, null)
         {
         }
 
-        public ChatPanel(IResponder responder) : this(responder, null, null)
+        public ChatPanel(IResponder responder) : this(responder, null, null, null)
         {
         }
 
-        public ChatPanel(IResponder responder, CapcomSettings settings) : this(responder, settings, null)
+        public ChatPanel(IResponder responder, CapcomSettings settings) : this(responder, settings, null, null)
         {
         }
 
-        public ChatPanel(IResponder responder, CapcomSettings settings, SecretStore secrets)
+        public ChatPanel(IResponder responder, CapcomSettings settings, SecretStore secrets) : this(responder, settings, secrets, null)
+        {
+        }
+
+        public ChatPanel(IResponder responder, CapcomSettings settings, SecretStore secrets, PinnedPromptStore pinnedPrompts)
         {
             _responder = responder ?? throw new ArgumentNullException(nameof(responder));
             _settings = settings;
             _secrets = secrets;
+            _pinnedPrompts = pinnedPrompts;
             _messages = new List<ChatMessage>();
             _messageQueue = new MessageQueue();
             _isVisible = false;

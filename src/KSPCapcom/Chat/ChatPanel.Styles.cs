@@ -61,6 +61,8 @@ namespace KSPCapcom
         private GUIStyle _critiqueButtonStyle;
         private GUIStyle _jumpToLatestStyle;
         private GUIStyle _disabledHintStyle;
+        private GUIStyle _pinnedButtonStyle;
+        private GUIStyle _pinToggleStyle;
 
         private void InitializeStyles()
         {
@@ -166,6 +168,22 @@ namespace KSPCapcom
                 wordWrap = true
             };
             _disabledHintStyle.normal.textColor = COLOR_MUTED;
+
+            // Pinned prompt button style (compact)
+            _pinnedButtonStyle = new GUIStyle(HighLogic.Skin.button)
+            {
+                fontSize = FONT_SIZE_SECONDARY,
+                padding = new RectOffset(4, 4, 2, 2),
+                margin = new RectOffset(2, 2, 0, 0)
+            };
+
+            // Pin/unpin toggle button style (star icon)
+            _pinToggleStyle = new GUIStyle(HighLogic.Skin.button)
+            {
+                fontSize = 14,
+                padding = new RectOffset(2, 2, 0, 0),
+                alignment = TextAnchor.MiddleCenter
+            };
 
             _stylesInitialized = true;
         }

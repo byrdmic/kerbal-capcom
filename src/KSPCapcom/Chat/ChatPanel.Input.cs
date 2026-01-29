@@ -16,6 +16,9 @@ namespace KSPCapcom
         private int _historyIndex = -1;           // -1 = not navigating, 0..N = position in history
         private string _workingCopy = "";         // Preserved draft when user starts navigating
 
+        // Pinned prompts UI state
+        private bool _pinsExpanded = false;
+
         /// <summary>
         /// Check if any settings text field or editor panel currently has focus.
         /// </summary>
@@ -51,6 +54,9 @@ namespace KSPCapcom
                 var statusText = $"Generating... ({elapsed:F0}s)";
                 GUILayout.Label(statusText, _statusLabelStyle);
             }
+
+            // Draw pinned prompts row
+            DrawPinnedPromptsRow();
 
             // Handle keyboard input before drawing
             bool shouldSend = false;
@@ -117,6 +123,9 @@ namespace KSPCapcom
             }
 
             GUILayout.BeginHorizontal();
+
+            // Pin/unpin toggle (only show if we have a pinned store and non-empty input)
+            DrawPinToggle();
 
             // Input remains enabled even while waiting (messages will queue)
             // This keeps UI responsive
@@ -311,5 +320,91 @@ namespace KSPCapcom
             _historyIndex = -1;
             _workingCopy = "";
         }
+
+        #region Pinned Prompts UI
+
+        /// <summary>
+        /// Draw the collapsible pinned prompts row.
+        /// </summary>
+        private void DrawPinnedPromptsRow()
+        {
+            if (_pinnedPrompts == null || _pinnedPrompts.Count == 0)
+                return;
+
+            GUILayout.BeginHorizontal();
+
+            // Toggle button to expand/collapse
+            string toggleLabel = _pinsExpanded ? "▼ Pins" : "► Pins";
+            if (GUILayout.Button(toggleLabel, _pinnedButtonStyle, GUILayout.Width(50)))
+            {
+                _pinsExpanded = !_pinsExpanded;
+            }
+
+            // Show pinned prompts as buttons when expanded
+            if (_pinsExpanded)
+            {
+                var pinned = _pinnedPrompts.GetPinned();
+                foreach (var prompt in pinned)
+                {
+                    if (GUILayout.Button(prompt.DisplayLabel, _pinnedButtonStyle, GUILayout.MaxWidth(100)))
+                    {
+                        // Insert into input field (do not auto-send)
+                        _inputText = prompt.Text;
+                        _focusInputFrames = FOCUS_FRAME_COUNT;
+                        ResetHistoryNavigation();
+                        CapcomCore.Log($"Inserted pinned prompt: {prompt.DisplayLabel}");
+                    }
+                }
+
+                GUILayout.FlexibleSpace();
+            }
+
+            GUILayout.EndHorizontal();
+        }
+
+        /// <summary>
+        /// Draw the pin/unpin toggle button.
+        /// Shows filled star if current input is pinned, empty star if not.
+        /// Hidden if input is empty or no pin store available.
+        /// </summary>
+        private void DrawPinToggle()
+        {
+            if (_pinnedPrompts == null)
+                return;
+
+            // Only show toggle if input has content
+            if (string.IsNullOrWhiteSpace(_inputText))
+            {
+                // Reserve space to prevent layout shift
+                GUILayout.Space(24);
+                return;
+            }
+
+            bool isPinned = _pinnedPrompts.IsPinned(_inputText);
+            string buttonLabel = isPinned ? "★" : "☆";
+            string tooltip = isPinned ? "Unpin this prompt" : "Pin this prompt";
+
+            if (GUILayout.Button(new GUIContent(buttonLabel, tooltip), _pinToggleStyle, GUILayout.Width(24), GUILayout.Height(24)))
+            {
+                if (isPinned)
+                {
+                    _pinnedPrompts.Unpin(_inputText);
+                    _pinnedPrompts.Save();
+                }
+                else
+                {
+                    if (_pinnedPrompts.Pin(_inputText, PinnedPromptStore.GenerateLabel(_inputText)))
+                    {
+                        _pinnedPrompts.Save();
+                    }
+                    else if (_pinnedPrompts.IsFull)
+                    {
+                        AddSystemMessage(FormatWarning("Cannot pin: maximum of 10 pins reached. Unpin one first."));
+                    }
+                }
+            }
+        }
+
+        #endregion
     }
 }

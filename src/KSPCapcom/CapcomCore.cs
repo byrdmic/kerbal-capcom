@@ -33,6 +33,7 @@ namespace KSPCapcom
         private ReadinessPanel _readinessPanel;
         private CapcomSettings _settings;
         private SecretStore _secrets;
+        private PinnedPromptStore _pinnedPrompts;
         private EditorCraftMonitor _editorMonitor;
 
         /// <summary>
@@ -91,6 +92,8 @@ namespace KSPCapcom
             _settings = new CapcomSettings();
             _secrets = new SecretStore();
             _secrets.Load();
+            _pinnedPrompts = new PinnedPromptStore();
+            _pinnedPrompts.Load();
 
             // Create OpenAI connector with API key and model from settings
             var openAIConnector = new OpenAIConnector(
@@ -115,8 +118,8 @@ namespace KSPCapcom
             // Create LLM responder wrapping the connector and prompt builder
             var responder = new LLMResponder(connector, promptBuilder);
 
-            // Create chat panel with LLM responder and secrets
-            _chatPanel = new ChatPanel(responder, _settings, _secrets);
+            // Create chat panel with LLM responder, secrets, and pinned prompts
+            _chatPanel = new ChatPanel(responder, _settings, _secrets, _pinnedPrompts);
             _readinessPanel = new ReadinessPanel(_settings);
             _toolbarButton = new ToolbarButton(OnToolbarToggle);
 
