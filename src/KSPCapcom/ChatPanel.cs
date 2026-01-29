@@ -73,6 +73,7 @@ namespace KSPCapcom
 
         // Hex strings for inline rich text
         private const string HEX_MUTED = "#888888";
+        private const string HEX_SUCCESS = "#99e699";
         private const string HEX_WARNING = "#ffaa00";
         private const string HEX_ERROR = "#ff6666";
 
@@ -626,6 +627,9 @@ namespace KSPCapcom
         private static string FormatMuted(string text) =>
             $"<size={FONT_SIZE_SMALL}><color={HEX_MUTED}>{text}</color></size>";
 
+        private static string FormatSuccess(string text) =>
+            $"<color={HEX_SUCCESS}>{text}</color>";
+
         private static string FormatWarning(string text) =>
             $"<color={HEX_WARNING}>{text}</color>";
 
@@ -1075,14 +1079,29 @@ namespace KSPCapcom
                 }
                 else if (segment is CodeBlockSegment codeBlock)
                 {
-                    // Render as script card
-                    _scriptCardRenderer.DrawScriptCard(codeBlock, maxCardWidth);
+                    // Render as script card with copy feedback callback
+                    _scriptCardRenderer.DrawScriptCard(codeBlock, maxCardWidth, OnScriptCopyResult);
                 }
             }
 
             GUILayout.EndVertical();
             GUILayout.FlexibleSpace();
             GUILayout.EndHorizontal();
+        }
+
+        /// <summary>
+        /// Callback for script card copy result. Shows toast feedback.
+        /// </summary>
+        private void OnScriptCopyResult(bool success, string error)
+        {
+            if (success)
+            {
+                AddSystemMessage(FormatSuccess("Copied to clipboard"));
+            }
+            else
+            {
+                AddSystemMessage(FormatWarning($"Copy failed: {error ?? "unknown error"}"));
+            }
         }
 
         /// <summary>

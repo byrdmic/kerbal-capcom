@@ -53,7 +53,8 @@ namespace KSPCapcom.UI
         /// </summary>
         /// <param name="codeBlock">The code block segment to render.</param>
         /// <param name="maxWidth">Maximum width for the card.</param>
-        public void DrawScriptCard(CodeBlockSegment codeBlock, float maxWidth)
+        /// <param name="onCopyResult">Optional callback invoked after copy: (success, errorMessage).</param>
+        public void DrawScriptCard(CodeBlockSegment codeBlock, float maxWidth, Action<bool, string> onCopyResult = null)
         {
             if (codeBlock == null)
             {
@@ -73,7 +74,7 @@ namespace KSPCapcom.UI
             GUILayout.BeginVertical(_cardBoxStyle, GUILayout.MaxWidth(maxWidth));
 
             // Header row: [kOS Script] [Copy] [Expand]
-            DrawHeader(codeBlock, cardId, needsCollapse, isExpanded);
+            DrawHeader(codeBlock, cardId, needsCollapse, isExpanded, onCopyResult);
 
             // Code content
             DrawCodeContent(codeBlock.RawCode, lines, needsCollapse, isExpanded);
@@ -87,7 +88,7 @@ namespace KSPCapcom.UI
         /// <summary>
         /// Draw the card header with title and action buttons.
         /// </summary>
-        private void DrawHeader(CodeBlockSegment codeBlock, int cardId, bool needsCollapse, bool isExpanded)
+        private void DrawHeader(CodeBlockSegment codeBlock, int cardId, bool needsCollapse, bool isExpanded, Action<bool, string> onCopyResult)
         {
             GUILayout.BeginHorizontal();
 
@@ -108,7 +109,8 @@ namespace KSPCapcom.UI
             // Copy button
             if (GUILayout.Button("Copy", _buttonStyle, GUILayout.Width(BUTTON_WIDTH), GUILayout.Height(BUTTON_HEIGHT)))
             {
-                CopyToClipboard(codeBlock.RawCode);
+                var result = CopyToClipboard(codeBlock.RawCode);
+                onCopyResult?.Invoke(result.success, result.error);
             }
 
             // Expand/Collapse button (only for long scripts)
@@ -200,16 +202,22 @@ namespace KSPCapcom.UI
         /// <summary>
         /// Copy text to the system clipboard.
         /// </summary>
-        private void CopyToClipboard(string text)
+        /// <returns>Tuple of (success, errorMessage). errorMessage is null on success.</returns>
+        private (bool success, string error) CopyToClipboard(string text)
         {
             try
             {
                 GUIUtility.systemCopyBuffer = text;
                 CapcomCore.Log("ScriptCard: Code copied to clipboard");
+                return (true, null);
             }
             catch (Exception ex)
             {
+                string shortError = ex.Message.Length > 40
+                    ? ex.Message.Substring(0, 37) + "..."
+                    : ex.Message;
                 CapcomCore.LogWarning($"ScriptCard: Failed to copy to clipboard - {ex.Message}");
+                return (false, shortError);
             }
         }
 
