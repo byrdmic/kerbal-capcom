@@ -8,6 +8,7 @@ using KSPCapcom.Editor;
 using KSPCapcom.LLM;
 using KSPCapcom.Parsing;
 using KSPCapcom.Responders;
+using KSPCapcom.UI;
 using KSPCapcom.Validation;
 
 namespace KSPCapcom
@@ -66,6 +67,9 @@ namespace KSPCapcom
 
         // Critique service
         private CritiqueService _critiqueService;
+
+        // Script editor panel
+        private ScriptEditorPanel _scriptEditorPanel;
 
         // Settings and secrets
         private readonly CapcomSettings _settings;
@@ -126,6 +130,9 @@ namespace KSPCapcom
             float x = Screen.width - DEFAULT_WIDTH - 50;
             float y = 100;
             _windowRect = new Rect(x, y, DEFAULT_WIDTH, DEFAULT_HEIGHT);
+
+            // Initialize script editor panel
+            _scriptEditorPanel = new ScriptEditorPanel(_settings);
 
             // Add welcome message
             AddSystemMessage("CAPCOM online. How can I assist you, Flight?");

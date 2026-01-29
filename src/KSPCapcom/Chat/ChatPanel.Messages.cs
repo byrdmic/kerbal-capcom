@@ -100,6 +100,9 @@ namespace KSPCapcom
             {
                 DrawSaveDialog();
             }
+
+            // Script editor panel (floating window)
+            _scriptEditorPanel?.OnGUI();
         }
 
         /// <summary>
@@ -247,8 +250,8 @@ namespace KSPCapcom
                 }
                 else if (segment is CodeBlockSegment codeBlock)
                 {
-                    // Render as script card with copy and save callbacks
-                    _scriptCardRenderer.DrawScriptCard(codeBlock, maxCardWidth, OnScriptCopyResult, OnScriptSaveRequest);
+                    // Render as script card with copy, save, and open callbacks
+                    _scriptCardRenderer.DrawScriptCard(codeBlock, maxCardWidth, OnScriptCopyResult, OnScriptSaveRequest, OnScriptOpenRequest);
                 }
             }
 
@@ -270,6 +273,23 @@ namespace KSPCapcom
             {
                 AddSystemMessage(FormatWarning($"Copy failed: {error ?? "unknown error"}"));
             }
+        }
+
+        /// <summary>
+        /// Callback for script card open request. Opens the script editor panel.
+        /// </summary>
+        private void OnScriptOpenRequest(CodeBlockSegment codeBlock)
+        {
+            _scriptEditorPanel?.Open(codeBlock, OnScriptEditorSaveRequest);
+        }
+
+        /// <summary>
+        /// Callback from script editor save action. Opens the save dialog with edited code.
+        /// </summary>
+        private void OnScriptEditorSaveRequest(string editedCode)
+        {
+            var editedBlock = new CodeBlockSegment(editedCode, 0, editedCode.Length, "kos", editedCode, true);
+            OnScriptSaveRequest(editedBlock);
         }
 
         /// <summary>

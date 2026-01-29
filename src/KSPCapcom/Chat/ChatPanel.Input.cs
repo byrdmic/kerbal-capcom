@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using KSPCapcom.UI;
 
 namespace KSPCapcom
 {
@@ -16,7 +17,7 @@ namespace KSPCapcom
         private string _workingCopy = "";         // Preserved draft when user starts navigating
 
         /// <summary>
-        /// Check if any settings text field currently has focus.
+        /// Check if any settings text field or editor panel currently has focus.
         /// </summary>
         private bool IsSettingsFieldFocused()
         {
@@ -25,7 +26,8 @@ namespace KSPCapcom
                    focused == "SettingsApiKey" ||
                    focused == "SettingsEndpoint" ||
                    focused == "SettingsArchivePath" ||
-                   focused == "SaveDialogFilename";
+                   focused == "SaveDialogFilename" ||
+                   focused == ScriptEditorPanel.ControlName;
         }
 
         /// <summary>

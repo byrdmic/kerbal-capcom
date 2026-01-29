@@ -55,7 +55,8 @@ namespace KSPCapcom.UI
         /// <param name="maxWidth">Maximum width for the card.</param>
         /// <param name="onCopyResult">Optional callback invoked after copy: (success, errorMessage).</param>
         /// <param name="onSaveRequest">Optional callback invoked when Save is clicked: (codeBlock).</param>
-        public void DrawScriptCard(CodeBlockSegment codeBlock, float maxWidth, Action<bool, string> onCopyResult = null, Action<CodeBlockSegment> onSaveRequest = null)
+        /// <param name="onOpenRequest">Optional callback invoked when Open is clicked: (codeBlock).</param>
+        public void DrawScriptCard(CodeBlockSegment codeBlock, float maxWidth, Action<bool, string> onCopyResult = null, Action<CodeBlockSegment> onSaveRequest = null, Action<CodeBlockSegment> onOpenRequest = null)
         {
             if (codeBlock == null)
             {
@@ -74,8 +75,8 @@ namespace KSPCapcom.UI
             // Card container
             GUILayout.BeginVertical(_cardBoxStyle, GUILayout.MaxWidth(maxWidth));
 
-            // Header row: [kOS Script] [Save] [Copy] [Expand]
-            DrawHeader(codeBlock, cardId, needsCollapse, isExpanded, onCopyResult, onSaveRequest);
+            // Header row: [kOS Script] [Save] [Open] [Copy] [Expand]
+            DrawHeader(codeBlock, cardId, needsCollapse, isExpanded, onCopyResult, onSaveRequest, onOpenRequest);
 
             // Code content
             DrawCodeContent(codeBlock.RawCode, lines, needsCollapse, isExpanded);
@@ -89,7 +90,7 @@ namespace KSPCapcom.UI
         /// <summary>
         /// Draw the card header with title and action buttons.
         /// </summary>
-        private void DrawHeader(CodeBlockSegment codeBlock, int cardId, bool needsCollapse, bool isExpanded, Action<bool, string> onCopyResult, Action<CodeBlockSegment> onSaveRequest)
+        private void DrawHeader(CodeBlockSegment codeBlock, int cardId, bool needsCollapse, bool isExpanded, Action<bool, string> onCopyResult, Action<CodeBlockSegment> onSaveRequest, Action<CodeBlockSegment> onOpenRequest)
         {
             GUILayout.BeginHorizontal();
 
@@ -113,6 +114,15 @@ namespace KSPCapcom.UI
                 if (GUILayout.Button("Save", _buttonStyle, GUILayout.Width(BUTTON_WIDTH), GUILayout.Height(BUTTON_HEIGHT)))
                 {
                     onSaveRequest.Invoke(codeBlock);
+                }
+            }
+
+            // Open button (only for kOS scripts)
+            if (codeBlock.IsKosLikely && onOpenRequest != null)
+            {
+                if (GUILayout.Button("Open", _buttonStyle, GUILayout.Width(BUTTON_WIDTH), GUILayout.Height(BUTTON_HEIGHT)))
+                {
+                    onOpenRequest.Invoke(codeBlock);
                 }
             }
 
